@@ -1,0 +1,43 @@
+name: randomtalk
+
+networks:
+  randomtalk-network:
+    driver: bridge
+
+services:
+  matchmaker:
+    image: randomtalk-matchmaker:local
+    working_dir: /app
+    entrypoint: ["air", "-c", "/app/deployments/docker/matchmaker/.air.toml"]
+    build:
+      context: ../../
+      dockerfile: ./deployments/docker/matchmaker/debug.Dockerfile
+    ports:
+      # grpc api
+      - "50500:50500"
+      # debug port
+      - "40000:40000"
+    env_file:
+      - ./.env.default
+    volumes:
+      - ../../cmd:/app/cmd
+      - ../../deployments/docker:/app/deployments/docker
+      - ../../justfile:/app/justfile
+      - ../../internal:/app/internal
+      - ../../pkg:/app/pkg
+      - ../../proto:/app/proto
+    networks:
+      - randomtalk-network
+
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    container_name: jaeger
+    ports:
+      - "16686:16686" # Jaeger UI
+      - "14250:14250" # For OpenTelemetry gRPC traces
+      - "14268:14268" # For OpenTelemetry HTTP traces
+      - "4317:4317" # For gRPC traces
+    environment:
+      - COLLECTOR_ZIPKIN_HTTP_PORT=9411 # Optional: Zipkin-compatible endpoint
+    networks:
+      - randomtalk-network

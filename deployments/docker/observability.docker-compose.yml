@@ -1,0 +1,60 @@
+name: randomtalk
+
+networks:
+  randomtalk-network:
+    driver: bridge
+
+volumes:
+  grafana-data:
+
+services:
+  cadvisor:
+    container_name: cadvisor
+    image: gcr.io/cadvisor/cadvisor:latest
+    privileged: true
+    devices:
+      - /dev/kmsg:/dev/kmsg
+    volumes:
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /etc/machine-id:/etc/machine-id:ro
+      - /var/lib/dbus/machine-id:/var/lib/dbus/machine-id:ro
+    restart: unless-stopped
+    expose:
+      - 8080
+    labels:
+      org.label-schema.group: "monitoring"
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      # grafana web interface
+      - "3000:3000"
+    environment:
+      - GF_PATHS_PROVISIONING=/etc/grafana/provisioning
+      - DS_PROMETHEUS=prometheus
+    volumes:
+      - "grafana-data:/var/lib/grafana"
+      - "./grafana/datasources.yml:/etc/grafana/provisioning/datasources/datasources.yml"
+      - "./grafana/dashboards/dashboard.json:/var/lib/grafana/dashboards/dashboard.json"
+      - "./grafana/dashboards/dashboard-matchmaking.json:/var/lib/grafana/dashboards/dashboard-matchmaking.json"
+      - "./grafana/dashboards/default.yml:/etc/grafana/provisioning/dashboards/default.yml"
+    privileged: true
+    depends_on:
+      - prometheus
+    networks:
+      - randomtalk-network
+
+  prometheus:
+    container_name: prometheus
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - "./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml"
+    privileged: true
+    depends_on:
+      - cadvisor

@@ -1,0 +1,151 @@
+syntax = "proto3";
+package randomtalk.matchmaking.v1;
+
+import "google/api/annotations.proto";
+import "google/protobuf/timestamp.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+import "randomtalk/matchmaking/v1/match.proto";
+
+option go_package = "github.com/xfrr/randomtalk/proto/v1/matchpb";
+option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_swagger) = {
+  info: {
+    title: "Match  Service"
+    version: "v1"
+    contact: {
+      name: "xfrr"
+      url: "https://fromero.me"
+      email: "work@fromero.me"
+    }
+    license: {
+      name: "Apache 2.0"
+      url: "https://github.com/xfrr/randomtalk/blob/main/LICENSE"
+    }
+  }
+
+  schemes: HTTP
+  schemes: HTTPS
+  schemes: WSS
+
+  host: "localhost:50500"
+
+  consumes: "application/json"
+  produces: "application/json"
+
+  security_definitions: {
+    security: {
+      key: "OAuth2"
+      value: {
+        type: TYPE_OAUTH2
+        flow: FLOW_ACCESS_CODE
+        authorization_url: "https://example.com/oauth/authorize"
+        token_url: "https://example.com/oauth/token"
+        scopes: {
+          scope: {
+            key: "read"
+            value: "Grants read access"
+          }
+        }
+      }
+    }
+  }
+
+  security: {
+    security_requirement: {
+      key: "OAuth2"
+      value: {}
+    }
+  }
+
+  responses: {
+    key: "403"
+    value: {description: "Returned when the requester does not have permission to access the resource."}
+  }
+  responses: {
+    key: "404"
+    value: {
+      description: "Returned when the resource does not exist."
+      schema: {
+        json_schema: {type: STRING}
+      }
+    }
+  }
+  responses: {
+    key: "500"
+    value: {description: "Returned when an internal server error occurs."}
+  }
+};
+
+service MatchMakingService {
+  // FindMatch tries to find a match for the user based on their preferences.
+  rpc FindMatch(FindMatchRequest) returns (FindMatchResponse) {
+    option (google.api.http) = {
+      post: "/v1/matches"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      security: {
+        // security_requirement: {
+        //   key: "OAuth2"
+        //   value: {scope: "read"}
+        // }
+      }
+    };
+  }
+
+  // Retrieves a match details by its ID.
+  rpc GetMatch(GetMatchRequest) returns (GetMatchResponse) {
+    option (google.api.http) = {get: "/v1/matches/{match_id}"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      security: {
+        // security_requirement: {
+        //   key: "OAuth2"
+        //   value: {scope: "read"}
+        // }
+      }
+    };
+  }
+}
+
+message FindMatchRequest {
+  string user_id = 1;
+  string user_name = 2;
+  int32 user_age = 3;
+  Gender user_gender = 4;
+  LatLng user_location = 5;
+  MatchPreferences match_preferences = 6;
+}
+
+message FindMatchResponse {
+  string match_id = 1;
+}
+
+message GetMatchRequest {
+  string match_id = 1;
+}
+
+message GetMatchResponse {
+  Match match = 1;
+}
+
+message MatchPreferences {
+  Gender gender = 1;
+  int32 min_age = 2;
+  int32 max_age = 3;
+  double max_distance_km = 4;
+  repeated string interests = 5;
+  int32 max_wait_time_seconds = 6;
+}
+
+enum Gender {
+  GENDER_UNSPECIFIED = 0;
+  GENDER_MALE = 1;
+  GENDER_FEMALE = 2;
+}
+
+message LatLng {
+  // The latitude in degrees. It must be in the range [-90.0, +90.0].
+  double latitude = 1;
+
+  // The longitude in degrees. It must be in the range [-180.0, +180.0].
+  double longitude = 2;
+}

@@ -1,0 +1,12 @@
+syntax = "proto3";
+package randomtalk.v1user;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/xfrr/randomtalk/proto/v1/userpb";
+
+// UserConnectedNotification is a message (event) sent to notify that a user has connected.
+message UserDisconnectedNotification {
+  string user_id = 1;
+  google.protobuf.Timestamp disconnected_at = 2;
+}

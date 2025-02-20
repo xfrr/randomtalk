@@ -1,0 +1,20 @@
+syntax = "proto3";
+package randomtalk.matchmaking.v1;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/xfrr/randomtalk/proto/v1/matchpb";
+
+message Match {
+  string id = 1;
+  string name = 2;
+  repeated string participant_ids = 3;
+  google.protobuf.Timestamp created_at = 4;
+  google.protobuf.Timestamp updated_at = 5;
+}
+
+message MatchCreatedNotification {
+  string match_id = 1;
+  repeated string participant_ids = 3;
+  google.protobuf.Timestamp created_at = 4;
+}

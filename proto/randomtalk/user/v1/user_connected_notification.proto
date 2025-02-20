@@ -1,0 +1,39 @@
+syntax = "proto3";
+package randomtalk.v1user;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/xfrr/randomtalk/proto/v1/userpb";
+
+// UserConnectedNotification is a message (event) sent to notify that a user has connected.
+message UserConnectedNotification {
+  string user_id = 1;
+  string user_name = 2;
+  int32 user_age = 3;
+  Gender user_gender = 4;
+  float user_location_latitude = 5;
+  float user_location_longitude = 6;
+  string user_country = 7;
+  string user_city = 8;
+  string user_language = 9;
+  repeated string user_interests = 10;
+  Preferences user_preferences = 11;
+  google.protobuf.Timestamp connected_at = 12;
+}
+
+// Preferences is a message that contains the user preferences.
+message Preferences {
+  int32 min_age = 1;
+  int32 max_age = 2;
+  Gender gender = 3;
+  float max_distance_km = 4;
+  int32 max_wait_time_seconds = 5;
+  repeated string interests = 6;
+}
+
+// Gender is an enum that represents the user gender.
+enum Gender {
+  UNSPECIFIED_GENDER = 0;
+  MALE_GENDER = 1;
+  FEMALE_GENDER = 2;
+}

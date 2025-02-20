@@ -1,0 +1,46 @@
+name: randomtalk
+
+networks:
+  randomtalk-network:
+    driver: bridge
+
+volumes:
+  nats-db:
+  nui-db:
+
+services:
+  nats-jetstream:
+    image: nats:2.10.22
+    command: ["--jetstream"]
+    ports:
+      - "4222:4222"
+      - "8222:8222"
+      - "6222:6222"
+    networks:
+      - randomtalk-network
+    volumes:
+      - nats-db:/tmp/nats
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "nats",
+          "tooling",
+          "healthcheck",
+          "--server",
+          "nats://localhost:4222",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  nui:
+    image: ghcr.io/nats-nui/nui:latest
+    ports:
+      - "31311:31311"
+    networks:
+      - randomtalk-network
+    volumes:
+      - nui-db:/db
+    depends_on:
+      - nats-jetstream

@@ -1,0 +1,19 @@
+{
+    "proto": "./proto/randomtalk/matchmaking/v1/matchmaking_service.proto",
+    "call": "randomtalk.matchmaking.v1.MatchMakingService/FindMatch",
+    "total": 10,
+    "concurrency": 50,
+    "data": {
+        "user_id": "Jonh",
+        "user_name": "Doe"
+    },
+    "metadata": {
+        "trace_id": "{{.RequestNumber}}",
+        "timestamp": "{{.TimestampUnix}}"
+    },
+    "import-paths": [
+        "./proto"
+    ],
+    "max-duration": "5s",
+    "host": "0.0.0.0:50500"
+}

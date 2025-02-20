@@ -1,0 +1,11 @@
+datasources:
+- name: prometheus
+  type: prometheus
+  url: http://host.docker.internal:9090
+  access: proxy
+  isDefault: true
+- name: jaeger
+  type: jaeger
+  url: http://host.docker.internal:16686
+  access: proxy
+  isDefault: false
