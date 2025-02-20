@@ -1,0 +1,13 @@
+{
+  "go.testEnvVars": {
+    "GO_ENV": "test"
+  },
+  "go.buildTags": "integration",
+  "go.testFlags": ["-v", "-race", "-tags", "integration"],
+  "go.lintTool": "golangci-lint",
+  "go.lintFlags": ["--fast"],
+  "protoc": {
+    "path": "/opt/homebrew/bin/protoc",
+    "options": ["-I ./proto"]
+  }
+}
