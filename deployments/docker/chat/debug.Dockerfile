@@ -31,4 +31,4 @@ COPY go.mod go.sum ./
 RUN go mod download
 
 # Expose ports
-EXPOSE 50000 40000
+EXPOSE 51000 41000

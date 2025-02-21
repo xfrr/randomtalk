@@ -45,11 +45,11 @@ func (s *Service) Start(ctx context.Context) {
 	// serve http and websocket
 	go func() {
 		s.logger.Info().
-			Str("address", s.config.WebsocketServer.Address).
-			Str("path", s.config.WebsocketServer.Path).
-			Str("url", fmt.Sprintf("ws://%s%s", s.config.WebsocketServer.Address, s.config.WebsocketServer.Path)).
+			Str("address", s.config.HubWebsocketServer.Address).
+			Str("path", s.config.HubWebsocketServer.Path).
+			Str("url", fmt.Sprintf("ws://%s%s", s.config.HubWebsocketServer.Address, s.config.HubWebsocketServer.Path)).
 			Msg("starting websocket server")
-		err := chathttp.ServeHTTP(s.config.WebsocketServer, s.httpWebsocketHub.Handle)
+		err := chathttp.ServeHTTP(s.config.HubWebsocketServer, s.httpWebsocketHub.Handle)
 		if err != nil {
 			s.logger.Error().Err(err).Msg("failed to start http server")
 		}
@@ -67,7 +67,10 @@ func (s *Service) shutdown() {
 func MustInitService(opts ...InitOption) Service {
 	service, err := NewService(opts...)
 	if err != nil {
-		service.logger.Fatal().Err(err).Msg("failed to initialize chat service")
+		service.logger.Fatal().
+			Any("config", service.config).
+			Err(err).
+			Msg("failed to initialize chat service")
 	}
 	return *service
 }
@@ -88,11 +91,15 @@ func NewService(opts ...InitOption) (*Service, error) {
 		opt(svc)
 	}
 
+	if svc.config == (chatconfig.Config{}) {
+		svc.config = chatconfig.MustLoadFromEnv()
+	}
+
 	if svc.logger == nil {
 		logger := logging.NewLogger(
 			svc.config.ServiceName,
 			env.Environment(svc.config.ServiceEnvironment),
-			svc.config.Logging.Level,
+			svc.config.LoggingConfig.Level,
 		)
 
 		svc.logger = &logger
@@ -120,7 +127,7 @@ func NewService(opts ...InitOption) (*Service, error) {
 	}
 
 	_, err = js.CreateOrUpdateStream(ctx, jetstream.StreamConfig{
-		Name:      svc.config.NotificationStream.Name,
+		Name:      svc.config.NotificationStreamConfig.Name,
 		Subjects:  []string{"randomtalk.notifications.chat.>"},
 		Retention: jetstream.LimitsPolicy,
 		MaxAge:    5 * time.Minute,
@@ -144,7 +151,7 @@ func initOtelTraces(ctx context.Context, config chatconfig.Config, serviceVersio
 		xotel.WithServiceName(config.ServiceName),
 		xotel.WithServiceVersion(serviceVersion),
 		xotel.WithServiceEnvironment(env.Environment(config.ServiceEnvironment)),
-		xotel.WithEndpointURL(config.OpenTelemetry.CollectorEndpoint),
+		xotel.WithEndpointURL(config.Observability.OTELCollectorEndpoint),
 	)
 	if err != nil {
 		return nil, err
@@ -154,7 +161,7 @@ func initOtelTraces(ctx context.Context, config chatconfig.Config, serviceVersio
 
 func (s *Service) setupNatsConnection(config chatconfig.Config) error {
 	var err error
-	s.natsConnection, err = nats.Connect(config.Nats.URI,
+	s.natsConnection, err = nats.Connect(config.NatsConfig.URI,
 		nats.ReconnectWait(5*time.Second),
 		nats.MaxReconnects(-1),
 		nats.PingInterval(10*time.Second),
@@ -172,5 +179,6 @@ func (s *Service) setupNatsConnection(config chatconfig.Config) error {
 	if err != nil {
 		return err
 	}
+
 	return nil
 }

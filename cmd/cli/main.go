@@ -15,7 +15,7 @@ var RootCmd = &cobra.Command{
 }
 
 var (
-	grpcAddr = RootCmd.Flags().String("grpc-addr", "localhost:50500", "gRPC server address")
+	grpcAddr = RootCmd.Flags().String("grpc-addr", "localhost:50000", "gRPC server address")
 )
 
 func main() {

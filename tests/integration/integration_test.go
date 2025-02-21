@@ -24,11 +24,11 @@ import (
 
 const (
 	natsURL          = nats.DefaultURL
-	subjectTemplate  = "randomtalk.notifications.chat.users"
+	chatSubjectBase  = "randomtalk.notifications.chat.users"
 	matchmakingTopic = "randomtalk.matchmaking.matches.>"
 	numberOfUsers    = 500
 	expectedMatches  = 250
-	testTimeout      = 10 * time.Minute
+	testTimeout      = 5 * time.Minute // Timeout for the entire test
 )
 
 type NATSClient struct {
@@ -45,32 +45,28 @@ func TestRandomtalkIntegration(t *testing.T) {
 	client := mustCreateNATSClient(t, natsURL)
 	defer client.Close()
 
-	var wg sync.WaitGroup
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		publishChatNotifications(ctx, t, client)
-	}()
+	// 1) Start publishing chat notifications in a separate goroutine.
+	//    We do not tie this to the main wait group; it simply fires and forgets.
+	go publishChatNotifications(ctx, t, client)
 
-	matchResults := make(chan struct {
-		matchesFound      int
-		duplicatedMatches int
-	}, 1)
+	// 2) Channel to receive the match results from the matching listener.
+	matchResults := make(chan matchResult, 1)
 
+	// 3) Start listening for matches in another goroutine.
 	go func() {
 		matchesFound, duplicatedMatches := listenForMatches(ctx, t, client)
-		matchResults <- struct {
-			matchesFound      int
-			duplicatedMatches int
-		}{matchesFound, duplicatedMatches}
+		matchResults <- matchResult{
+			matchesFound:      matchesFound,
+			duplicatedMatches: duplicatedMatches,
+		}
 		close(matchResults)
 	}()
 
-	wg.Wait() // Ensure all messages are published before assertions
+	// 4) Wait for the result (or test context expiration).
 	select {
 	case res := <-matchResults:
-		require.Zero(t, res.duplicatedMatches, "unexpected duplicate matches found")
-		assert.Equal(t, expectedMatches, res.matchesFound, "unexpected number of matches found")
+		require.Zero(t, res.duplicatedMatches, "Unexpected duplicate matches found")
+		assert.Equal(t, expectedMatches, res.matchesFound, "Unexpected number of matches found")
 	case <-ctx.Done():
 		t.Fatal("Test timed out before receiving match results")
 	}
@@ -78,20 +74,33 @@ func TestRandomtalkIntegration(t *testing.T) {
 
 func setupLogger() {
 	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stdout})
-	zerolog.SetGlobalLevel(zerolog.InfoLevel)
+	zerolog.SetGlobalLevel(zerolog.DebugLevel) // Verbose for integration tests
 }
 
 func mustCreateNATSClient(t *testing.T, url string) *NATSClient {
+	client, err := NewNATSClient(url)
+	require.NoError(t, err, "Failed to initialize NATS client")
+	return client
+}
+
+func NewNATSClient(url string) (*NATSClient, error) {
 	nc, err := nats.Connect(url)
-	require.NoError(t, err, "failed to connect to NATS")
+	if err != nil {
+		return nil, fmt.Errorf("failed to connect to NATS: %w", err)
+	}
 
 	js, err := jetstream.New(nc)
-	require.NoError(t, err, "failed to create JetStream context")
+	if err != nil {
+		nc.Close()
+		return nil, fmt.Errorf("failed to create JetStream context: %w", err)
+	}
 
-	return &NATSClient{nc: nc, js: js}
+	return &NATSClient{nc: nc, js: js}, nil
 }
 
 func (n *NATSClient) Close() {
+	// Drain returns an error if called multiple times or the connection is closed,
+	// so you may ignore the error or log it if you wish.
 	_ = n.nc.Drain()
 	n.nc.Close()
 }
@@ -101,28 +110,30 @@ func publishChatNotifications(ctx context.Context, t *testing.T, client *NATSCli
 	wg.Add(numberOfUsers)
 
 	for i := 1; i <= numberOfUsers; i++ {
-		go func(userID int) {
+		userID := i
+		go func() {
 			defer wg.Done()
 			publishUserNotification(ctx, t, client, userID)
-		}(i)
+		}()
 	}
 
-	waitForCompletion(ctx, &wg, t, "publishChatNotifications")
+	wg.Wait()
+
+	// Flush to ensure all messages are actually sent before we exit this goroutine.
+	// If flush fails, it's likely a bigger issue, so we fail the test immediately.
+	require.NoError(t, client.nc.Flush(), "NATS flush failed after publishing chat notifications")
+
+	log.Info().Msg("All chat notifications published")
 }
 
 func publishUserNotification(ctx context.Context, t *testing.T, client *NATSClient, userID int) {
 	event := createChatEvent(userID)
 	body, err := json.Marshal(event)
-	if err != nil {
-		t.Logf("Failed to marshal CloudEvent: %v", err)
-		return
-	}
+	require.NoError(t, err, "Failed to marshal CloudEvent")
 
-	subject := fmt.Sprintf("%s.%d.connected", subjectTemplate, userID)
+	subject := fmt.Sprintf("%s.%d.connected", chatSubjectBase, userID)
 	_, err = client.js.Publish(ctx, subject, body, jetstream.WithMsgID(event.ID()))
-	if err != nil {
-		t.Logf("Failed to publish message for user %d: %v", userID, err)
-	}
+	require.NoErrorf(t, err, "Failed to publish message for user %d", userID)
 }
 
 func createChatEvent(userID int) cloudevents.Event {
@@ -135,7 +146,7 @@ func createChatEvent(userID int) cloudevents.Event {
 	event.SetDataContentType(cloudevents.ApplicationJSON)
 
 	data := map[string]interface{}{
-		"user_id":     strconv.Itoa(userID),
+		"user_id":     strconv.Itoa(userID), // or userID int if your system expects that
 		"user_age":    20,
 		"user_gender": "GENDER_MALE",
 		"user_preferences": map[string]interface{}{
@@ -148,80 +159,93 @@ func createChatEvent(userID int) cloudevents.Event {
 	return event
 }
 
-func listenForMatches(ctx context.Context, t *testing.T, client *NATSClient) (int, int) {
-	consumer, err := client.js.OrderedConsumer(ctx, "randomtalk_matchmaking_match_events",
-		jetstream.OrderedConsumerConfig{FilterSubjects: []string{matchmakingTopic}, InactiveThreshold: 2 * time.Minute})
-	require.NoError(t, err, "failed to create ordered consumer")
-
-	var matchesFound, duplicatedMatches int
-	matchesUniqueMap := sync.Map{}
-	msgChan := make(chan jetstream.Msg, 1000)
-
-	go func() {
-		consumer.Consume(func(msg jetstream.Msg) {
-			msgChan <- msg
-		})
-	}()
-
-	for {
-		select {
-		case <-ctx.Done():
-			return matchesFound, duplicatedMatches
-		case msg := <-msgChan:
-			match, err := processMatchMessage(msg)
-			if err != nil {
-				t.Logf("Failed to process match message: %v", err)
-				continue
-			}
-
-			if isDuplicateMatch(&matchesUniqueMap, match.RequesterID) || isDuplicateMatch(&matchesUniqueMap, match.CandidateID) {
-				duplicatedMatches++
-				t.Logf("Duplicate match found: %+v", match)
-			}
-			matchesFound++
-		}
-	}
+// matchResult is passed through a channel to the main goroutine
+type matchResult struct {
+	matchesFound      int
+	duplicatedMatches int
 }
 
-func isDuplicateMatch(matchesUniqueMap *sync.Map, userID string) bool {
+func listenForMatches(ctx context.Context, t *testing.T, client *NATSClient) (int, int) {
+	consumer, err := client.js.OrderedConsumer(ctx,
+		"randomtalk_matchmaking_match_events", // Stream name
+		jetstream.OrderedConsumerConfig{
+			FilterSubjects:    []string{matchmakingTopic},
+			InactiveThreshold: 2 * time.Minute,
+		})
+	require.NoError(t, err, "failed to create ordered consumer")
+
+	var (
+		matchesFound      int
+		duplicatedMatches int
+	)
+	matchesSeen := sync.Map{}
+
+	for {
+		// If we've already got all the matches, exit early for faster tests
+		if matchesFound >= expectedMatches {
+			log.Info().Msgf("Reached expected match count: %d", matchesFound)
+			break
+		}
+
+		select {
+		case <-ctx.Done():
+			log.Warn().Msg("Stopped listening for matches due to context timeout/cancellation")
+			break
+		default:
+			// Try to fetch a batch of messages
+			batch, fetchErr := consumer.Fetch(100, jetstream.FetchMaxWait(2*time.Second))
+			if fetchErr != nil {
+				if fetchErr == nats.ErrTimeout {
+					// No new messages in the last 2s; continue listening.
+					continue
+				}
+				t.Fatalf("Failed to fetch messages: %v", fetchErr)
+			}
+
+			for msg := range batch.Messages() {
+				match, procErr := processMatchMessage(msg)
+				if procErr != nil {
+					t.Logf("Failed to process match message: %v", procErr)
+					continue
+				}
+
+				// Check if the requester or candidate was seen before
+				if markAsSeen(&matchesSeen, match.RequesterID) || markAsSeen(&matchesSeen, match.CandidateID) {
+					duplicatedMatches++
+				}
+
+				matchesFound++
+				require.NoError(t, msg.Ack())
+			}
+		}
+		// No 'continue' or 'break' here means we re-check the condition at the top of the loop
+	}
+
+	return matchesFound, duplicatedMatches
+}
+
+// markAsSeen returns true if the userID was already stored in the map.
+// We store an empty struct to reduce memory overhead.
+func markAsSeen(matchesUniqueMap *sync.Map, userID string) bool {
 	_, loaded := matchesUniqueMap.LoadOrStore(userID, struct{}{})
 	return loaded
 }
 
-type payload struct {
+type matchPayload struct {
 	RequesterID string `json:"match_user_requester_id"`
 	CandidateID string `json:"match_user_matched_id"`
 }
 
-func processMatchMessage(msg jetstream.Msg) (*payload, error) {
-	var event cloudevents.Event
-	if err := json.Unmarshal(msg.Data(), &event); err != nil {
+func processMatchMessage(msg jetstream.Msg) (*matchPayload, error) {
+	var evt cloudevents.Event
+	if err := json.Unmarshal(msg.Data(), &evt); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal CloudEvent: %w", err)
 	}
 
-	var p *payload
-	if err := event.DataAs(&p); err != nil {
+	var p matchPayload
+	if err := evt.DataAs(&p); err != nil {
 		return nil, fmt.Errorf("failed to parse event data: %w", err)
 	}
 
-	if err := msg.Ack(); err != nil {
-		return nil, fmt.Errorf("failed to acknowledge message: %w", err)
-	}
-
-	return p, nil
-}
-
-func waitForCompletion(ctx context.Context, wg *sync.WaitGroup, t *testing.T, name string) {
-	doneCh := make(chan struct{})
-	go func() {
-		defer close(doneCh)
-		wg.Wait()
-	}()
-
-	select {
-	case <-ctx.Done():
-		t.Logf("%s canceled or timed out: %v", name, ctx.Err())
-	case <-doneCh:
-		t.Logf("%s completed.", name)
-	}
+	return &p, nil
 }

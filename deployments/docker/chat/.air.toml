@@ -10,23 +10,23 @@ tmp_dir = "bin"
 # Array of commands to run before each build
 # pre_cmd = ["echo 'hello air' > pre_cmd.txt"]
 # Just plain old shell command. You could use `make` as well.
-cmd = "go build -o ./bin/matchmaker ./cmd/matchmaker"
+cmd = "go build -o ./bin/chat ./cmd/chat-server"
 # Array of commands to run after each successful build
 post_cmd = []
 # Array of commands to run after ^C
 # post_cmd = ["echo 'hello air' > post_cmd.txt"]
 # Binary file yields from `cmd`.
-bin = "bin/matchmaker"
+bin = "bin/chat"
 # Customize binary, can setup environment variables when run your app.
-full_bin = "./bin/matchmaker"
-# Add additional arguments when running binary (bin/full_bin). Will run './tmp/matchmaker hello world'.
+full_bin = "./bin/chat"
+# Add additional arguments when running binary (bin/full_bin). Will run './tmp/chat hello world'.
 # args_bin = ["hello", "world"]
 # Watch these filename extensions.
 include_ext = ["go"]
 exclude_dir = [
   "vendor",
   "node_modules",
-  "chat",
+  "matchmaking",
   ".git",
   ".idea",
   ".vscode",

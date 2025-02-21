@@ -3,10 +3,10 @@ module github.com/xfrr/randomtalk/internal/matchmaking
 go 1.24.0
 
 require (
+	github.com/caarlos0/env/v11 v11.3.1
 	github.com/cloudevents/sdk-go v1.2.0
 	github.com/cloudevents/sdk-go/v2 v2.15.2
 	github.com/google/uuid v1.6.0
-	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/nats-io/nats.go v1.39.1
 	github.com/rs/zerolog v1.33.0
 	github.com/spf13/cobra v1.9.1

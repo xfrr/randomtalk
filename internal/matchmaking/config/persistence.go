@@ -1,7 +1,5 @@
 package matchmakingconfig
 
-import "github.com/kelseyhightower/envconfig"
-
 // UserStoreEngineType is the type of the user store engine.
 type UserStoreEngineType string
 
@@ -50,14 +48,8 @@ const (
 // Persistence holds the configuration for the Persistence layer.
 type Persistence struct {
 	// UserStoreEngine is the engine used for the user store.
-	UserStoreEngine UserStoreEngineType `envconfig:"USER_STORE_ENGINE" default:"memory"`
+	UserStoreEngine UserStoreEngineType `env:"USER_STORE_ENGINE" default:"memory"`
 
 	// MatchRepositoryEngine is the engine used for the match repository.
-	MatchRepositoryEngine MatchRepositoryEngineType `envconfig:"MATCH_REPOSITORY_ENGINE" default:"nats"`
-}
-
-func mustLoadPersistenceConfig() Persistence {
-	var cfg Persistence
-	envconfig.MustProcess(envPrefix, &cfg)
-	return cfg
+	MatchRepositoryEngine MatchRepositoryEngineType `env:"MATCH_REPOSITORY_ENGINE" default:"nats"`
 }

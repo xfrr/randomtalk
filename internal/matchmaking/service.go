@@ -76,19 +76,18 @@ func NewService(opts ...InitOption) (*Service, error) {
 	for _, opt := range opts {
 		opt(svc)
 	}
+	if svc.config == (matchmakingconfig.Config{}) {
+		svc.config = matchmakingconfig.MustLoadFromEnv()
+	}
 
 	if svc.logger == nil {
 		logger := logging.NewLogger(
 			svc.config.ServiceName,
 			env.Environment(svc.config.ServiceEnvironment),
-			svc.config.Logging.Level,
+			svc.config.LoggingConfig.Level,
 		)
 
 		svc.logger = &logger
-	}
-
-	if svc.config == (matchmakingconfig.Config{}) {
-		svc.config = matchmakingconfig.MustLoadFromEnv()
 	}
 
 	if svc.traceProvider == nil {
@@ -320,7 +319,7 @@ func initOtelTraces(ctx context.Context, config matchmakingconfig.Config, servic
 		xotel.WithServiceName(config.ServiceName),
 		xotel.WithServiceVersion(serviceVersion),
 		xotel.WithServiceEnvironment(env.Environment(config.ServiceEnvironment)),
-		xotel.WithEndpointURL(config.OpenTelemetry.CollectorEndpoint),
+		xotel.WithEndpointURL(config.Observability.OTELCollectorEndpoint),
 	)
 	if err != nil {
 		return nil, err
@@ -330,7 +329,7 @@ func initOtelTraces(ctx context.Context, config matchmakingconfig.Config, servic
 
 func (s *Service) setupNatsConnection(config matchmakingconfig.Config) error {
 	var err error
-	s.natsConnection, err = nats.Connect(config.Nats.URI,
+	s.natsConnection, err = nats.Connect(config.NatsConfig.URI,
 		nats.ReconnectWait(5*time.Second),
 		nats.MaxReconnects(-1),
 		nats.PingInterval(10*time.Second),

@@ -61,7 +61,7 @@ func NewHub(cmdBus chatcommands.CommandBus, queryBus chatqueries.QueryBus, opts 
 		queryBus:   queryBus,
 		logger:     zerolog.Nop(), // Avoid nil logger
 		cfg: chatconfig.HubWebsocketServer{
-			Address:             ":51500",
+			Address:             ":51000",
 			Path:                "/",
 			ReadBufferSize:      1024,
 			ReadTimeoutSeconds:  10,

@@ -16,7 +16,7 @@ func NewLogger(serviceName string, environment env.Environment, lvlStr string) z
 		lvl, _ = zerolog.ParseLevel(lvlStr)
 	}
 
-	logger := zerolog.New(zerolog.ConsoleWriter{Out: os.Stderr}).
+	logger := zerolog.New(zerolog.ConsoleWriter{Out: zerolog.SyncWriter(os.Stdout)}).
 		With().
 		Str(string(semconv.ServiceNameKey), serviceName).
 		Str(string(semconv.DeploymentEnvironmentKey), environment.String()).

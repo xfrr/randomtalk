@@ -18,7 +18,7 @@
       "name": "MatchMakingService"
     }
   ],
-  "host": "localhost:50500",
+  "host": "localhost:50000",
   "schemes": [
     "http",
     "https",

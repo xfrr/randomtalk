@@ -1,17 +1,15 @@
 package matchmakingconfig
 
-import "github.com/kelseyhightower/envconfig"
+// MessagingEngine is the type of the consumer engine.
+type MessagingEngine string
 
-// ConsumerEngine is the type of the consumer engine.
-type ConsumerEngine string
-
-func (t ConsumerEngine) String() string {
+func (t MessagingEngine) String() string {
 	return string(t)
 }
 
-func (t ConsumerEngine) IsValid() bool {
+func (t MessagingEngine) IsValid() bool {
 	switch t {
-	case ConsumerEngineNATS:
+	case MessagingEngineNATS:
 		return true
 	default:
 		return false
@@ -19,19 +17,12 @@ func (t ConsumerEngine) IsValid() bool {
 }
 
 const (
-	// ConsumerEngineNATS is the NATS engine.
-	ConsumerEngineNATS ConsumerEngine = "nats"
+	// MessagingEngineNATS is the NATS engine.
+	MessagingEngineNATS MessagingEngine = "nats"
 )
 
-// ChatNotificationsConsumerConfig holds the configuration for the chat notifications consumer.
 type ChatNotificationsConsumerConfig struct {
-	Engine     ConsumerEngine `envconfig:"CHAT_NOTIFICATIONS_CONSUMER_ENGINE" default:"nats"`
-	Name       string         `envconfig:"CHAT_NOTIFICATIONS_CONSUMER_NAME" default:"randomtalk_matchmaking_chat_notifications_consumer"`
-	StreamName string         `envconfig:"CHAT_NOTIFICATIONS_STREAM_NAME" default:"randomtalk_chat_notifications"`
-}
-
-func mustLoadChatNotificationsConsumerConfig() ChatNotificationsConsumerConfig {
-	var cfg ChatNotificationsConsumerConfig
-	envconfig.MustProcess(envPrefix, &cfg)
-	return cfg
+	Engine     MessagingEngine `env:"ENGINE" default:"nats"`
+	Name       string          `env:"NAME" default:"randomtalk_matchmaking_chat_notifications_consumer"`
+	StreamName string          `env:"STREAM_NAME" default:"randomtalk_chat_notifications"`
 }

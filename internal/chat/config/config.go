@@ -1,22 +1,21 @@
 package chatconfig
 
-import "github.com/kelseyhightower/envconfig"
+import (
+	"github.com/caarlos0/env/v11"
+)
+
+const envPrefix = "RANDOMTALK_CHAT_"
 
 // Config holds the configuration for the randomtalk chat service.
 type Config struct {
-	ServiceName        string `envconfig:"SERVICE_NAME" default:"randomtalk-chat"`
-	ServiceEnvironment string `envconfig:"SERVICE_ENVIRONMENT" default:"development"`
+	ServiceName        string `env:"SERVICE_NAME" default:"randomtalk-chat"`
+	ServiceEnvironment string `env:"SERVICE_ENVIRONMENT" default:"development"`
 
-	// NotificationStream is the configuration for the JetStream stream used for notifications.
-	NotificationStream NotificationStreamConfig
-	// WebsocketServer is the configuration for the websocket server.
-	WebsocketServer HubWebsocketServer
-	// Logging is the configuration for the logging system.
-	Logging LoggingConfig
-	// Nats is the configuration for the NATS server.
-	Nats NatsConfig
-	// OpenTelemetry is the configuration for the OpenTelemetry system.
-	OpenTelemetry OpenTelemetryConfig
+	NotificationStreamConfig `envPrefix:"NATS_NOTIFICATION_STREAM_"`
+	HubWebsocketServer       `envPrefix:"HUB_WEBSOCKET_SERVER_"`
+	LoggingConfig            `envPrefix:"LOGGING_"`
+	NatsConfig               `envPrefix:"NATS_"`
+	Observability            `envPrefix:"OBSERVABILITY_"`
 }
 
 // MustLoadFromEnv loads the configuration from the environment variables.
@@ -25,6 +24,14 @@ type Config struct {
 // Global variables are filled and exported to be used in the application.
 func MustLoadFromEnv() Config {
 	var cfg Config
-	envconfig.MustProcess(envPrefix, &cfg)
+	err := env.ParseWithOptions(&cfg, env.Options{
+		Prefix:              envPrefix,
+		TagName:             "env",
+		RequiredIfNoDef:     true,
+		DefaultValueTagName: "default",
+	})
+	if err != nil {
+		panic(err)
+	}
 	return cfg
 }

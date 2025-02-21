@@ -14,17 +14,47 @@ services:
       dockerfile: ./deployments/docker/matchmaker/debug.Dockerfile
     ports:
       # grpc api
-      - "50500:50500"
+      - "50000:50000"
       # debug port
       - "40000:40000"
     env_file:
       - ./.env.default
     volumes:
+      - ../../go.mod:/app/go.mod
+      - ../../go.sum:/app/go.sum
+      - ../../go.work:/app/go.work
+      - ../../go.work.sum:/app/go.work.sum
       - ../../cmd:/app/cmd
       - ../../deployments/docker:/app/deployments/docker
       - ../../justfile:/app/justfile
       - ../../internal:/app/internal
-      - ../../pkg:/app/pkg
+      - ../../proto:/app/proto
+    networks:
+      - randomtalk-network
+
+  chat:
+    image: randomtalk-chat:local
+    working_dir: /app
+    entrypoint: ["air", "-c", "/app/deployments/docker/chat/.air.toml"]
+    build:
+      context: ../../
+      dockerfile: ./deployments/docker/chat/debug.Dockerfile
+    ports:
+      # grpc api
+      - "51000:51000"
+      # debug port
+      - "41000:41000"
+    env_file:
+      - ./.env.default
+    volumes:
+      - ../../go.mod:/app/go.mod
+      - ../../go.sum:/app/go.sum
+      - ../../go.work:/app/go.work
+      - ../../go.work.sum:/app/go.work.sum
+      - ../../cmd:/app/cmd
+      - ../../deployments/docker:/app/deployments/docker
+      - ../../justfile:/app/justfile
+      - ../../internal:/app/internal
       - ../../proto:/app/proto
     networks:
       - randomtalk-network
