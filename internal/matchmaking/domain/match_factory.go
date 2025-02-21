@@ -4,7 +4,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/xfrr/go-cqrsify/aggregate"
 
-	domainerror "github.com/xfrr/randomtalk/pkg/domain-error"
+	domainerror "github.com/xfrr/randomtalk/internal/shared/domain-error"
 )
 
 const EventSourceName = "randomtalk.matchmaking"

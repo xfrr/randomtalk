@@ -19,10 +19,11 @@ import (
 	matchmakinginmemory "github.com/xfrr/randomtalk/internal/matchmaking/infrastructure/memory"
 	matchnats "github.com/xfrr/randomtalk/internal/matchmaking/infrastructure/nats"
 	matchmakingtrace "github.com/xfrr/randomtalk/internal/matchmaking/infrastructure/tracing"
-	"github.com/xfrr/randomtalk/pkg/env"
-	"github.com/xfrr/randomtalk/pkg/logging"
-	"github.com/xfrr/randomtalk/pkg/messaging"
-	xotel "github.com/xfrr/randomtalk/pkg/otel"
+	"github.com/xfrr/randomtalk/internal/shared/env"
+	"github.com/xfrr/randomtalk/internal/shared/logging"
+	"github.com/xfrr/randomtalk/internal/shared/messaging"
+	xotel "github.com/xfrr/randomtalk/internal/shared/otel"
+	"github.com/xfrr/randomtalk/internal/shared/xnats"
 	"go.opentelemetry.io/otel/trace"
 )
 
@@ -353,7 +354,7 @@ func (s *Service) setupNatsConnection(config matchmakingconfig.Config) error {
 func (s *Service) initMatchRepository(ctx context.Context, js jetstream.JetStream) (matchdomain.MatchRepository, error) {
 	var matchRepo matchdomain.MatchRepository
 	matchRepo, err := matchnats.NewMatchStreamRepository(
-		ctx, js, matchnats.
+		ctx, js, xnats.
 			NewStreamConfig("randomtalk_matchmaking_match_events", "randomtalk.matchmaking.matches.>").
 			WithDenyDelete().
 			// WithDenyPurge(), // TODO: Adjust based on environment settings

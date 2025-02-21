@@ -1,0 +1,29 @@
+syntax = "proto3";
+package randomtalk.chat.v1;
+
+import "google/protobuf/timestamp.proto";
+import "randomtalk/chat/v1/command.proto";
+
+option go_package = "github.com/xfrr/randomtalk/proto/v1/chatpb";
+
+message UserMessage {
+  Type message_type = 1;
+  string message_id = 2;
+  string user_id = 3;
+  Payload payload = 4;
+  google.protobuf.Timestamp timestamp = 5;
+
+  message Payload {
+    oneof content {
+      Command command = 1;
+    }
+  }
+
+  enum Type {
+    TYPE_UNSPECIFIED = 0;
+    TYPE_SYSTEM = 1;
+    TYPE_TEXT = 2;
+    TYPE_COMMAND = 3;
+    TYPE_COMMAND_RESULT = 4;
+  }
+}

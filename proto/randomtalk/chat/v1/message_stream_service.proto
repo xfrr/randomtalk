@@ -2,38 +2,35 @@ syntax = "proto3";
 package randomtalk.chat.v1;
 
 import "google/api/annotations.proto";
-import "randomtalk/chat/v1/message.proto";
+import "randomtalk/chat/v1/user_message.proto";
 
 option go_package = "github.com/xfrr/randomtalk/proto/v1/chatpb";
 
 service MessageStreamService {
   // Subscribes to a match session to receive messages until the stream is closed.
   rpc ReceiveMessages(ReceiveMessagesRequest) returns (stream ReceiveMessagesResponse) {
-    option (google.api.http) = {get: "/v1/chat/{session_id}/messages"};
+    option (google.api.http) = {get: "/v1/rooms/{room_id}/messages"};
   }
   // Sends a message to a match session.
   rpc SendMessage(SendMessageRequest) returns (SendMessageResponse) {
     option (google.api.http) = {
-      put: "/v1/chat/{session_id}/messages/{message_id}"
+      put: "/v1/rooms/{room_id}/messages"
       body: "*"
     };
   }
 }
 
 message ReceiveMessagesRequest {
-  string session_id = 1;
+  string room_id = 1;
 }
 
 message ReceiveMessagesResponse {
-  Message message = 2;
+  UserMessage message = 2;
 }
 
 message SendMessageRequest {
-  string session_id = 1;
-  string message_id = 2;
-  string message_content = 3;
-  string root_timestamp = 4;
-  string previous_message_id = 5;
+  string room_id = 1;
+  UserMessage message = 2;
 }
 
 message SendMessageResponse {}

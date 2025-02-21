@@ -6,8 +6,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/xfrr/randomtalk/pkg/gender"
-	"github.com/xfrr/randomtalk/pkg/location"
+	"github.com/xfrr/randomtalk/internal/shared/gender"
+	"github.com/xfrr/randomtalk/internal/shared/location"
 )
 
 const (

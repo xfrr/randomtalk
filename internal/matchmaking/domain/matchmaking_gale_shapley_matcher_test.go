@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	domain "github.com/xfrr/randomtalk/internal/matchmaking/domain"
-	"github.com/xfrr/randomtalk/pkg/gender"
+	"github.com/xfrr/randomtalk/internal/shared/gender"
 )
 
 func TestGaleShapleyStableMatcher_FindStableMatches(t *testing.T) {

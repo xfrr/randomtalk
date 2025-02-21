@@ -7,9 +7,9 @@ import (
 
 	"github.com/rs/zerolog"
 	matchdomain "github.com/xfrr/randomtalk/internal/matchmaking/domain"
-	"github.com/xfrr/randomtalk/pkg/gender"
-	"github.com/xfrr/randomtalk/pkg/location"
-	"github.com/xfrr/randomtalk/pkg/messaging"
+	"github.com/xfrr/randomtalk/internal/shared/gender"
+	"github.com/xfrr/randomtalk/internal/shared/location"
+	"github.com/xfrr/randomtalk/internal/shared/messaging"
 )
 
 type UserMatchRequestedEvent struct {

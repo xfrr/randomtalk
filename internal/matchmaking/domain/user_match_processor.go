@@ -7,7 +7,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/rs/zerolog"
-	domain_error "github.com/xfrr/randomtalk/pkg/domain-error"
+	domain_error "github.com/xfrr/randomtalk/internal/shared/domain-error"
 )
 
 var _ MatchmakingProcessor = (*UserMatchProcessor)(nil)

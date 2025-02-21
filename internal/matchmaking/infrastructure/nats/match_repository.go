@@ -12,14 +12,14 @@ import (
 	"github.com/nats-io/nats.go/jetstream"
 	"github.com/xfrr/go-cqrsify/aggregate"
 	"github.com/xfrr/go-cqrsify/aggregate/event"
-	"github.com/xfrr/randomtalk/pkg/eventstore"
+	"github.com/xfrr/randomtalk/internal/shared/eventstore"
+	"github.com/xfrr/randomtalk/internal/shared/xnats"
 
 	matchdom "github.com/xfrr/randomtalk/internal/matchmaking/domain"
 )
 
 const (
-	streamEventAggregateVersionHeaderKey = "subjectversion"
-	matchesStreamSuffix                  = "matches"
+	matchesStreamSuffix = "matches"
 )
 
 // ensure MatchRepository implements matchdom.MatchRepository
@@ -31,9 +31,9 @@ type MatchRepository struct {
 	stream     eventstore.Stream
 }
 
-func NewMatchStreamRepository(ctx context.Context, js jetstream.JetStream, streamConfig StreamConfig) (*MatchRepository, error) {
+func NewMatchStreamRepository(ctx context.Context, js jetstream.JetStream, streamConfig xnats.StreamConfig) (*MatchRepository, error) {
 	// create nats match events stream
-	stream, err := CreateStream(ctx, js, streamConfig)
+	stream, err := xnats.CreateStream(ctx, js, streamConfig)
 	if err != nil {
 		return nil, err
 	}
@@ -163,7 +163,7 @@ func (r *MatchRepository) toCloudEvents(events []aggregate.Event) ([]eventstore.
 		ce.SetTime(evt.OccurredAt())
 		ce.SetDataSchema("schemas.randomtalk.com/matchmaking/match/events/" + evt.Name() + "/1.0")
 
-		if err := ce.Context.SetExtension(streamEventAggregateVersionHeaderKey, strconv.Itoa(evt.Aggregate().Version)); err != nil {
+		if err := ce.Context.SetExtension(xnats.SubjectVersionHeaderKey, strconv.Itoa(evt.Aggregate().Version)); err != nil {
 			return nil, fmt.Errorf("set extension: %w", err)
 		}
 		if dataErr := ce.SetData(string(eventstore.ContentTypeApplicationJSON), evt.Payload()); dataErr != nil {
@@ -191,7 +191,7 @@ func eventsFromCloudEvents(cloudEvents []eventstore.Event) ([]aggregate.Event, e
 }
 
 func eventFromCloudEvent(ce eventstore.Event) (aggregate.Event, error) {
-	aggVersion, err := types.ToInteger(ce.Extensions()[streamEventAggregateVersionHeaderKey])
+	aggVersion, err := types.ToInteger(xnats.SubjectVersionFromMap(ce.Extensions()))
 	if err != nil {
 		return nil, fmt.Errorf("invalid event aggregate version: %w", err)
 	}

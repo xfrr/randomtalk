@@ -7,7 +7,7 @@ import (
 
 	"github.com/xfrr/randomtalk/internal/matchmaking"
 
-	"github.com/xfrr/randomtalk/pkg/env"
+	"github.com/xfrr/randomtalk/internal/shared/env"
 )
 
 var (

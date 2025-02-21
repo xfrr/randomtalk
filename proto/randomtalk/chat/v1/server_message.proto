@@ -1,0 +1,26 @@
+syntax = "proto3";
+package randomtalk.chat.v1;
+
+import "google/protobuf/timestamp.proto";
+import "google/rpc/status.proto";
+import "randomtalk/chat/v1/command.proto";
+
+option go_package = "github.com/xfrr/randomtalk/proto/v1/chatpb";
+
+message ServerMessage {
+  string id = 1;
+  Type type = 2;
+  Payload payload = 3;
+  google.protobuf.Timestamp timestamp = 4;
+
+  message Payload {
+    oneof content {
+      google.rpc.Status error = 1;
+    }
+  }
+
+  enum Type {
+    TYPE_UNSPECIFIED = 0;
+    TYPE_ERROR = 1;
+  }
+}

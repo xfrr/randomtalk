@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/xfrr/go-cqrsify/aggregate"
-	"github.com/xfrr/randomtalk/pkg/gender"
+	"github.com/xfrr/randomtalk/internal/shared/gender"
 )
 
 // Match is a domain entity representing a successful pairing of two users.

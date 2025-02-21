@@ -1,0 +1,19 @@
+syntax = "proto3";
+package randomtalk.chat.v1;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/xfrr/randomtalk/proto/v1/chatpb";
+
+// Command is a message that represents a command sent by the user.
+message Command {
+  string name = 2;
+  string payload = 3;
+  google.protobuf.Timestamp timestamp = 5;
+}
+
+// CommandResponseError is a message that represents an error response to a command.
+message CommandResponseError {
+  string code = 1;
+  string message = 2;
+}

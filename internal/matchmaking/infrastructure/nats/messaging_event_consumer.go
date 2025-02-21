@@ -7,7 +7,7 @@ import (
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nats.go/jetstream"
 	"github.com/rs/zerolog"
-	"github.com/xfrr/randomtalk/pkg/messaging"
+	"github.com/xfrr/randomtalk/internal/shared/messaging"
 )
 
 // MessagingEventConsumer consumes messaging events from a Nats JetStream stream.

@@ -1,7 +1,7 @@
 package matchdomain
 
 import (
-	"github.com/xfrr/randomtalk/pkg/gender"
+	"github.com/xfrr/randomtalk/internal/shared/gender"
 )
 
 // MatchCreatedEvent is an event that is published when a match  is created.

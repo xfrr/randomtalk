@@ -13,7 +13,8 @@ import (
 	"github.com/nats-io/nats.go/jetstream"
 	"github.com/rs/zerolog"
 	matchdomain "github.com/xfrr/randomtalk/internal/matchmaking/domain"
-	"github.com/xfrr/randomtalk/pkg/eventstore"
+	"github.com/xfrr/randomtalk/internal/shared/eventstore"
+	"github.com/xfrr/randomtalk/internal/shared/xnats"
 	matchmakingpb "github.com/xfrr/randomtalk/proto/gen/go/randomtalk/matchmaking/v1"
 )
 
@@ -160,7 +161,7 @@ func createMatchCreatedNotification(match matchdomain.Match) (*eventstore.Event,
 	ce.SetTime(time.Now())
 	ce.SetDataSchema(buildNotificationDataSchema("match_created"))
 
-	if err := ce.Context.SetExtension(streamEventAggregateVersionHeaderKey, strconv.Itoa(int(match.AggregateVersion()))); err != nil {
+	if err := ce.Context.SetExtension(xnats.SubjectVersionHeaderKey, strconv.Itoa(int(match.AggregateVersion()))); err != nil {
 		return nil, fmt.Errorf("set extension: %w", err)
 	}
 

@@ -1,7 +1,7 @@
 package matchcommands
 
 import (
-	"github.com/xfrr/randomtalk/pkg/gender"
+	"github.com/xfrr/randomtalk/internal/shared/gender"
 
 	matchdomain "github.com/xfrr/randomtalk/internal/matchmaking/domain"
 )

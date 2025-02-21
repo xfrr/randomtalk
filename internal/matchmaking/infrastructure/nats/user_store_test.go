@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 	matchdomain "github.com/xfrr/randomtalk/internal/matchmaking/domain"
 	matchnats "github.com/xfrr/randomtalk/internal/matchmaking/infrastructure/nats"
-	"github.com/xfrr/randomtalk/pkg/gender"
+	"github.com/xfrr/randomtalk/internal/shared/gender"
 )
 
 func TestUserStore_AddUser(t *testing.T) {

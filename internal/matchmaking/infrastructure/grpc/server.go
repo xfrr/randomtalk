@@ -4,8 +4,8 @@ import (
 	"context"
 	"net"
 
-	"github.com/xfrr/randomtalk/pkg/gender"
-	"github.com/xfrr/randomtalk/pkg/location"
+	"github.com/xfrr/randomtalk/internal/shared/gender"
+	"github.com/xfrr/randomtalk/internal/shared/location"
 
 	matchcommands "github.com/xfrr/randomtalk/internal/matchmaking/application/commands"
 	matchqueries "github.com/xfrr/randomtalk/internal/matchmaking/application/queries"

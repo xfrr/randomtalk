@@ -3,8 +3,8 @@ package matchdomain
 import (
 	"encoding/json"
 
-	domain_error "github.com/xfrr/randomtalk/pkg/domain-error"
-	"github.com/xfrr/randomtalk/pkg/gender"
+	domain_error "github.com/xfrr/randomtalk/internal/shared/domain-error"
+	"github.com/xfrr/randomtalk/internal/shared/gender"
 )
 
 // Domain-level errors
