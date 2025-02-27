@@ -6,10 +6,10 @@ import (
 
 	"github.com/xfrr/randomtalk/internal/shared/gender"
 	"github.com/xfrr/randomtalk/internal/shared/location"
+	"github.com/xfrr/randomtalk/internal/shared/matchmaking"
 
 	matchcommands "github.com/xfrr/randomtalk/internal/matchmaking/application/commands"
 	matchqueries "github.com/xfrr/randomtalk/internal/matchmaking/application/queries"
-	matchpreferences "github.com/xfrr/randomtalk/internal/matchmaking/domain"
 	matchpb "github.com/xfrr/randomtalk/proto/gen/go/randomtalk/matchmaking/v1"
 
 	"github.com/xfrr/go-cqrsify/cqrs"
@@ -37,7 +37,7 @@ func (s *Server) FindMatch(
 		UserID:     in.GetUserId(),
 		UserAge:    int(in.GetUserAge()),
 		UserGender: toGender(in.GetUserGender()),
-		UserMatchPreferences: *matchpreferences.DefaultPreferences().
+		UserMatchPreferences: *matchmaking.DefaultPreferences().
 			WithMinAge(int(in.GetMatchPreferences().GetMinAge())).
 			WithMaxAge(int(in.GetMatchPreferences().GetMaxAge())).
 			WithGender(toGender(in.GetMatchPreferences().GetGender())).

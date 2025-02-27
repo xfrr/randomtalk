@@ -21,11 +21,6 @@ type StreamConfig struct {
 	streamConfig jetstream.StreamConfig
 }
 
-func (c StreamConfig) WithStreamName(name string) StreamConfig {
-	c.streamConfig.Name = name
-	return c
-}
-
 func (c StreamConfig) WithSubjects(subjects ...string) StreamConfig {
 	c.streamConfig.Subjects = subjects
 	return c

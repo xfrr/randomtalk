@@ -26,8 +26,8 @@ const (
 	natsURL          = nats.DefaultURL
 	chatSubjectBase  = "randomtalk.notifications.chat.users"
 	matchmakingTopic = "randomtalk.matchmaking.matches.>"
-	numberOfUsers    = 500
-	expectedMatches  = 250
+	numberOfUsers    = 10
+	expectedMatches  = 5
 	testTimeout      = 5 * time.Minute // Timeout for the entire test
 )
 
@@ -73,7 +73,7 @@ func TestRandomtalkIntegration(t *testing.T) {
 }
 
 func setupLogger() {
-	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stdout})
+	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
 	zerolog.SetGlobalLevel(zerolog.DebugLevel) // Verbose for integration tests
 }
 

@@ -12,6 +12,7 @@ import (
 	matchdomain "github.com/xfrr/randomtalk/internal/matchmaking/domain"
 	matchnats "github.com/xfrr/randomtalk/internal/matchmaking/infrastructure/nats"
 	"github.com/xfrr/randomtalk/internal/shared/gender"
+	"github.com/xfrr/randomtalk/internal/shared/matchmaking"
 )
 
 func TestUserStore_AddUser(t *testing.T) {
@@ -20,7 +21,7 @@ func TestUserStore_AddUser(t *testing.T) {
 	store, err := matchnats.NewUserStore(ctx, js)
 	require.NoError(t, err)
 
-	user := matchdomain.NewUser("user-id-1", 25, gender.GenderUnspecified, matchdomain.DefaultPreferences())
+	user := matchdomain.NewUser("user-id-1", 25, gender.GenderUnspecified, matchmaking.DefaultPreferences())
 	err = store.AddUser(ctx, user)
 	require.NoError(t, err)
 
@@ -37,8 +38,8 @@ func TestUserStore_GetAll(t *testing.T) {
 	store, err := matchnats.NewUserStore(ctx, js)
 	require.NoError(t, err)
 
-	user1 := matchdomain.NewUser("user-id-1", 25, gender.GenderUnspecified, matchdomain.DefaultPreferences())
-	user2 := matchdomain.NewUser("user-id-2", 30, gender.GenderUnspecified, matchdomain.DefaultPreferences())
+	user1 := matchdomain.NewUser("user-id-1", 25, gender.GenderUnspecified, matchmaking.DefaultPreferences())
+	user2 := matchdomain.NewUser("user-id-2", 30, gender.GenderUnspecified, matchmaking.DefaultPreferences())
 
 	err = store.AddUser(ctx, user1)
 	require.NoError(t, err)
@@ -56,7 +57,7 @@ func TestUserStore_RemoveUsers(t *testing.T) {
 	store, err := matchnats.NewUserStore(ctx, js)
 	require.NoError(t, err)
 
-	user := matchdomain.NewUser("user-id-1", 25, gender.GenderUnspecified, matchdomain.DefaultPreferences())
+	user := matchdomain.NewUser("user-id-1", 25, gender.GenderUnspecified, matchmaking.DefaultPreferences())
 	err = store.AddUser(ctx, user)
 	require.NoError(t, err)
 

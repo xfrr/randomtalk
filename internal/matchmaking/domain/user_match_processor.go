@@ -19,7 +19,6 @@ type NotificationsChannel interface {
 
 // UserMatchProcessor is the concrete matchmaking service.
 type UserMatchProcessor struct {
-	notifications   NotificationsChannel
 	matchRepository MatchRepository
 	userStore       UserStore
 	matcher         StableMatchFinder
@@ -41,11 +40,9 @@ func NewUserMatchProcessor(
 	matchRepo MatchRepository,
 	userStore UserStore,
 	matcher StableMatchFinder,
-	notifications NotificationsChannel,
 	opts ...UserMatchMakerOption,
 ) (*UserMatchProcessor, error) {
 	svc := &UserMatchProcessor{
-		notifications:   notifications,
 		matchRepository: matchRepo,
 		matcher:         matcher,
 		logger:          &zerolog.Logger{},
@@ -129,14 +126,10 @@ func (svc *UserMatchProcessor) processMatch(ctx context.Context, candidate, matc
 		return fmt.Errorf("failed to create match: %w", createErr)
 	}
 
-	if notifyErr := svc.notifyMatch(ctx, match, candidate.ID(), matchedUser.ID()); notifyErr != nil {
-		return fmt.Errorf("notification error: %w", notifyErr)
-	}
-
-	svc.logger.Info().
+	svc.logger.Debug().
 		Str("match_id", match.ID()).
 		Strs("user_ids", []string{candidate.ID(), matchedUser.ID()}).
-		Msg("match created and notified")
+		Msg("new match created")
 	return nil
 }
 
@@ -154,24 +147,7 @@ func (svc *UserMatchProcessor) createAndPersistMatch(ctx context.Context, user1,
 	return match, nil
 }
 
-func (svc *UserMatchProcessor) notifyMatch(ctx context.Context, match *Match, userIDs ...string) error {
-	for _, uid := range userIDs {
-		if err := svc.notifications.Notify(ctx, uid, match); err != nil {
-			svc.logger.Error().
-				Err(err).
-				Str("user_id", uid).
-				Str("match_id", match.ID()).
-				Msg("failed to notify user about match")
-			return err
-		}
-	}
-	return nil
-}
-
 func (svc *UserMatchProcessor) ensureDependencies() error {
-	if svc.notifications == nil {
-		return domain_error.New("missing notifications channel")
-	}
 	if svc.matchRepository == nil {
 		return domain_error.New("missing match repository")
 	}

@@ -6,6 +6,7 @@ import (
 
 	"github.com/xfrr/go-cqrsify/aggregate"
 	"github.com/xfrr/randomtalk/internal/shared/gender"
+	"github.com/xfrr/randomtalk/internal/shared/matchmaking"
 )
 
 // Match is a domain entity representing a successful pairing of two users.
@@ -29,9 +30,9 @@ func (m *Match) Gender() gender.Gender {
 	return m.requester.gender
 }
 
-func (m *Match) Preferences() MatchPreferences {
+func (m *Match) Preferences() matchmaking.MatchPreferences {
 	if m.requester.preferences == nil {
-		return *DefaultPreferences()
+		return *matchmaking.DefaultPreferences()
 	}
 
 	return *m.requester.preferences
@@ -49,7 +50,6 @@ func (m *Match) Candidate() *User {
 	return m.match
 }
 
-// (If needed) Example event handling registration.
 func (m *Match) registerEventHandlers() {
 	var matchCreatedEvent MatchCreatedEvent
 	m.HandleEvent(matchCreatedEvent.EventName(), m.handleMatchCreatedEvent)

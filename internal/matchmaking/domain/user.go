@@ -5,6 +5,7 @@ import (
 
 	domain_error "github.com/xfrr/randomtalk/internal/shared/domain-error"
 	"github.com/xfrr/randomtalk/internal/shared/gender"
+	"github.com/xfrr/randomtalk/internal/shared/matchmaking"
 )
 
 // Domain-level errors
@@ -52,7 +53,7 @@ type User struct {
 	id          string
 	age         int
 	gender      gender.Gender
-	preferences *MatchPreferences
+	preferences *matchmaking.MatchPreferences
 	status      UserStatus
 }
 
@@ -61,7 +62,7 @@ func NewUser(
 	id string,
 	age int,
 	g gender.Gender,
-	preferences *MatchPreferences,
+	preferences *matchmaking.MatchPreferences,
 ) User {
 	return User{
 		id:          id,
@@ -86,9 +87,9 @@ func (u *User) Gender() gender.Gender {
 	return u.gender
 }
 
-func (u User) Preferences() MatchPreferences {
+func (u User) MatchPreferences() matchmaking.MatchPreferences {
 	if u.preferences == nil {
-		return *DefaultPreferences()
+		return *matchmaking.DefaultPreferences()
 	}
 
 	return *u.preferences
@@ -137,11 +138,11 @@ func (u *User) Rejected() bool {
 
 func UnmarshalUser(data []byte) (*User, error) {
 	type userCopy struct {
-		ID          string            `json:"id"`
-		Age         int               `json:"age"`
-		Gender      gender.Gender     `json:"gender"`
-		Preferences *MatchPreferences `json:"preferences,omitempty"`
-		Status      UserStatus        `json:"status,omitempty"`
+		ID          string                        `json:"id"`
+		Age         int                           `json:"age"`
+		Gender      gender.Gender                 `json:"gender"`
+		Preferences *matchmaking.MatchPreferences `json:"preferences,omitempty"`
+		Status      UserStatus                    `json:"status,omitempty"`
 	}
 	var u userCopy
 	if err := json.Unmarshal(data, &u); err != nil {
@@ -159,11 +160,11 @@ func UnmarshalUser(data []byte) (*User, error) {
 
 func MarshalUser(u *User) ([]byte, error) {
 	type userCopy struct {
-		ID          string            `json:"id"`
-		Age         int               `json:"age"`
-		Gender      gender.Gender     `json:"gender"`
-		Preferences *MatchPreferences `json:"preferences"`
-		Status      UserStatus        `json:"status"`
+		ID          string                        `json:"id"`
+		Age         int                           `json:"age"`
+		Gender      gender.Gender                 `json:"gender"`
+		Preferences *matchmaking.MatchPreferences `json:"preferences"`
+		Status      UserStatus                    `json:"status"`
 	}
 	cpy := userCopy{
 		ID:          u.id,

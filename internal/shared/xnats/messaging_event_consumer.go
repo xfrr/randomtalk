@@ -1,4 +1,4 @@
-package matchnats
+package xnats
 
 import (
 	"context"
@@ -17,8 +17,8 @@ type MessagingEventConsumer struct {
 	logger          *zerolog.Logger
 }
 
-// SetupMessagingEventConsumer creates a new MessagingEventConsumer.
-func SetupMessagingEventConsumer(
+// CreateMessagingEventConsumer creates a new MessagingEventConsumer.
+func CreateMessagingEventConsumer(
 	ctx context.Context,
 	nc *nats.Conn,
 	logger *zerolog.Logger,

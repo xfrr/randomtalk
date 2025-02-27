@@ -1,4 +1,4 @@
-package matchdomain
+package matchmaking
 
 import (
 	"encoding/json"
@@ -177,7 +177,7 @@ func (p MatchPreferences) MaxDistanceKm() float64 {
 	return p.state.DistanceCriteria.maxDistanceKm
 }
 
-func (p MatchPreferences) IsUserCompatible(matchUser *User) bool {
+func (p MatchPreferences) IsSatisfiedBy(matchUser User) bool {
 	if p.state.MinAgeCriteria != nil && !p.state.MinAgeCriteria.IsSatisfiedBy(matchUser) {
 		return false
 	}
@@ -244,8 +244,8 @@ func (m minAgeCriteria) Value() int {
 	return m.minAge
 }
 
-func (m minAgeCriteria) IsSatisfiedBy(matchUser *User) bool {
-	return m.minAge == 0 || matchUser.age >= m.minAge
+func (m minAgeCriteria) IsSatisfiedBy(matchUser User) bool {
+	return m.minAge == 0 || matchUser.Age() >= m.minAge
 }
 
 func (m minAgeCriteria) String() string {
@@ -275,8 +275,8 @@ func (m maxAgeCriteria) Value() int {
 	return m.maxAge
 }
 
-func (m maxAgeCriteria) IsSatisfiedBy(matchUser *User) bool {
-	return m.maxAge == 0 || matchUser.age <= m.maxAge
+func (m maxAgeCriteria) IsSatisfiedBy(matchUser User) bool {
+	return m.maxAge == 0 || matchUser.Age() <= m.maxAge
 }
 
 func (m maxAgeCriteria) String() string {
@@ -306,12 +306,12 @@ func (gc genderCriteria) Value() gender.Gender {
 	return gc.gender
 }
 
-func (gc genderCriteria) IsSatisfiedBy(matchUser *User) bool {
+func (gc genderCriteria) IsSatisfiedBy(matchUser User) bool {
 	if gc.gender.IsUnspecified() {
 		return true
 	}
 
-	return gc.gender.Is(matchUser.gender)
+	return gc.gender.Is(matchUser.Gender())
 }
 
 func (gc genderCriteria) String() string {
@@ -341,17 +341,17 @@ func (ic interestsCriteria) Value() []string {
 	return ic.interests
 }
 
-func (ic interestsCriteria) IsSatisfiedBy(matchUser *User) bool {
+func (ic interestsCriteria) IsSatisfiedBy(matchUser User) bool {
 	if len(ic.interests) == 0 {
 		return true
 	}
 
-	if len(matchUser.Preferences().Interests()) == 0 {
+	if len(matchUser.MatchPreferences().Interests()) == 0 {
 		return false
 	}
 
 	for _, interest := range ic.interests {
-		for _, msInterest := range matchUser.Preferences().Interests() {
+		for _, msInterest := range matchUser.MatchPreferences().Interests() {
 			if interest == msInterest {
 				return true
 			}
@@ -389,18 +389,18 @@ func (mdc *maxDistanceCriteria) Value() float64 {
 	return mdc.maxDistanceKm
 }
 
-func (mdc *maxDistanceCriteria) IsSatisfiedBy(matchUser *User) bool {
+func (mdc *maxDistanceCriteria) IsSatisfiedBy(matchUser User) bool {
 	if mdc.location == nil || mdc.maxDistanceKm == 0 {
 		return true
 	}
 
-	if matchUser.Preferences().Location() == nil {
+	if matchUser.MatchPreferences().Location() == nil {
 		return false
 	}
 
 	return withinDistance(
 		*mdc.location,
-		*matchUser.preferences.Location(),
+		*matchUser.MatchPreferences().Location(),
 		mdc.maxDistanceKm,
 	)
 }

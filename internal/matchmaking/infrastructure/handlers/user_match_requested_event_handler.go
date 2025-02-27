@@ -1,4 +1,4 @@
-package matcheventhandlers
+package matchmakinginfrahandlers
 
 import (
 	"context"
@@ -9,6 +9,7 @@ import (
 	matchdomain "github.com/xfrr/randomtalk/internal/matchmaking/domain"
 	"github.com/xfrr/randomtalk/internal/shared/gender"
 	"github.com/xfrr/randomtalk/internal/shared/location"
+	"github.com/xfrr/randomtalk/internal/shared/matchmaking"
 	"github.com/xfrr/randomtalk/internal/shared/messaging"
 )
 
@@ -18,7 +19,7 @@ type UserMatchRequestedEvent struct {
 	UserAge      int                           `json:"user_age"`
 	UserGender   gender.Gender                 `json:"user_gender"`
 	UserLocation *location.Location            `json:"user_location,omitempty"`
-	Preferences  *matchdomain.MatchPreferences `json:"user_preferences,omitempty"`
+	Preferences  *matchmaking.MatchPreferences `json:"user_preferences,omitempty"`
 }
 
 type UserMatchRequestedEventHandler struct {

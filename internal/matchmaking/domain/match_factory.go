@@ -60,13 +60,6 @@ func NewMatch(
 	return match, nil
 }
 
-func RawMatch(
-	msid MatchID,
-) *Match {
-	match := newMatch(msid)
-	return match
-}
-
 func NewMatchFromEvents(id MatchID, events ...aggregate.Event) (*Match, error) {
 	match := newMatch(id)
 

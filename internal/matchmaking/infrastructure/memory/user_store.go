@@ -54,7 +54,7 @@ func (us *UserStore) FindUserByPreferences(_ context.Context, user *matchdomain.
 	var compatibleUser matchdomain.User
 	us.usersIndex.Range(func(_, value interface{}) bool {
 		u, _ := value.(matchdomain.User)
-		if user.ID() != u.ID() && user.Preferences().IsUserCompatible(&u) {
+		if user.ID() != u.ID() && user.MatchPreferences().IsSatisfiedBy(&u) {
 			compatibleUser = u
 			return false
 		}
