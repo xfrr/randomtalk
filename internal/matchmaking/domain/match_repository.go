@@ -19,9 +19,6 @@ type MatchRepository interface {
 	// FindByID retrieves a match  by its ID.
 	FindByID(ctx context.Context, id string) (*Match, error)
 
-	// FindLastByUserID retrieves the last match for the given user ID.
-	FindLastByUserID(ctx context.Context, userID string) (*Match, error)
-
 	// Exists checks if a match  with the given ID exists.
 	Exists(ctx context.Context, id string) (bool, error)
 }

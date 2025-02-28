@@ -103,7 +103,7 @@ func (r *MatchRepository) Exists(ctx context.Context, id string) (bool, error) {
 func (r *MatchRepository) FindLastByUserID(ctx context.Context, userID string) (*matchdom.Match, error) {
 	// 1. retrieve all match events
 	batchSize := 10
-	filter := createEventFilterKey(r.sourceName, matchdom.MatchAggregateName, "*.created")
+	filter := createEventFilterKey(r.sourceName, matchdom.MatchAggregateName, "*", matchdom.MatchCreatedEvent{}.EventName())
 
 	// 2. iterate over events and filter by user ID
 	cloudEvents, err := r.stream.Fetch(ctx, batchSize, eventstore.FetchSubject(filter))

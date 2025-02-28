@@ -20,7 +20,7 @@ type MatchCreatedEvent struct {
 }
 
 func (e MatchCreatedEvent) EventName() string {
-	return "created"
+	return "match_created"
 }
 
 func NewMatchCreatedEvent(

@@ -71,27 +71,6 @@ func (r *TraceableMatchRepository) FindByID(ctx context.Context, matchID string)
 	return match, err
 }
 
-// FindLastByUserID finds the last match for the given user ID.
-func (r *TraceableMatchRepository) FindLastByUserID(ctx context.Context, userID string) (*matchdomain.Match, error) {
-	ctx, span := r.tracer.Start(
-		ctx,
-		"FindLastByUserID",
-		trace.WithSpanKind(trace.SpanKindConsumer),
-		trace.WithTimestamp(time.Now()),
-		trace.WithAttributes(
-			attribute.String("user_id", userID),
-		),
-	)
-	defer span.End()
-
-	match, err := r.repo.FindLastByUserID(ctx, userID)
-	if err != nil {
-		span.RecordError(err)
-		span.SetStatus(codes.Error, err.Error())
-	}
-	return match, err
-}
-
 // Exists checks if a match exists.
 func (r *TraceableMatchRepository) Exists(ctx context.Context, matchID string) (bool, error) {
 	ctx, span := r.tracer.Start(
