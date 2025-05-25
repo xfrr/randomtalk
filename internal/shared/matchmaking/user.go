@@ -1,20 +1,11 @@
 package matchmaking
 
-import (
-	"github.com/xfrr/randomtalk/internal/shared/gender"
-)
+import "github.com/xfrr/randomtalk/internal/shared/gender"
 
-// User represents a user in the matchmaking system.
+// User represents an entity that can be matched.
 type User interface {
-	// ID returns the user's unique identifier.
 	ID() string
-
-	// Age returns the user's age.
-	Age() int
-
-	// Gender returns the user's gender
+	Age() int32
 	Gender() gender.Gender
-
-	// MatchPreferences returns the user's match preferences.
-	MatchPreferences() MatchPreferences
+	Preferences() Preferences
 }
