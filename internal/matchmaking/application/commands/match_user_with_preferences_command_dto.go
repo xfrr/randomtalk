@@ -6,10 +6,10 @@ import (
 )
 
 type MatchUserWithPreferencesCommand struct {
-	UserID               string                       `json:"user_id"`
-	UserAge              int                          `json:"user_age"`
-	UserGender           gender.Gender                `json:"user_gender"`
-	UserMatchPreferences matchmaking.MatchPreferences `json:"user_match_preferences"`
+	UserID          string                  `json:"user_id"`
+	UserAge         int32                   `json:"user_age"`
+	UserGender      gender.Gender           `json:"user_gender"`
+	UserPreferences matchmaking.Preferences `json:"user_match_preferences"`
 }
 
 func (c MatchUserWithPreferencesCommand) CommandName() string {

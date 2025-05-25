@@ -1,28 +1,19 @@
-package matchmakinginfrahandlers
+package matchmakinghandlers
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 
 	"github.com/rs/zerolog"
 	matchdomain "github.com/xfrr/randomtalk/internal/matchmaking/domain"
 	"github.com/xfrr/randomtalk/internal/shared/gender"
-	"github.com/xfrr/randomtalk/internal/shared/location"
 	"github.com/xfrr/randomtalk/internal/shared/matchmaking"
 	"github.com/xfrr/randomtalk/internal/shared/messaging"
+	chatpbv1 "github.com/xfrr/randomtalk/proto/gen/go/randomtalk/chat/v1"
+	"google.golang.org/protobuf/encoding/protojson"
 )
 
-type UserMatchRequestedEvent struct {
-	UserID       string                        `json:"user_id"`
-	UserName     string                        `json:"user_name"`
-	UserAge      int                           `json:"user_age"`
-	UserGender   gender.Gender                 `json:"user_gender"`
-	UserLocation *location.Location            `json:"user_location,omitempty"`
-	Preferences  *matchmaking.MatchPreferences `json:"user_preferences,omitempty"`
-}
-
-type UserMatchRequestedEventHandler struct {
+type UserMatchRequestedNotificationHandler struct {
 	logger               *zerolog.Logger
 	matchmakingProcessor matchdomain.MatchmakingProcessor
 }
@@ -30,45 +21,59 @@ type UserMatchRequestedEventHandler struct {
 func NewUserMatchRequestedEventHandler(
 	matchmakingService matchdomain.MatchmakingProcessor,
 	logger *zerolog.Logger,
-) *UserMatchRequestedEventHandler {
-	return &UserMatchRequestedEventHandler{
+) *UserMatchRequestedNotificationHandler {
+	return &UserMatchRequestedNotificationHandler{
 		logger:               logger,
 		matchmakingProcessor: matchmakingService,
 	}
 }
 
-func (h *UserMatchRequestedEventHandler) Handle(ctx context.Context, evt *messaging.Event) error {
+func (h *UserMatchRequestedNotificationHandler) Handle(ctx context.Context, msg *messaging.Event) error {
 	h.logger.Debug().
-		Str("messaging_event_id", evt.ID()).
-		Str("messaging_event_type", evt.Type()).
-		Msg("user match requested event received")
+		Str("messaging_event_id", msg.ID()).
+		Str("messaging_event_type", msg.Type()).
+		Msg("user match requested notification received")
 
-	// parse event payload
-	eventPayload := new(UserMatchRequestedEvent)
-	err := json.Unmarshal(evt.Data(), eventPayload)
+	notification := new(chatpbv1.UserMatchRequestedNotification)
+	err := protojson.Unmarshal(msg.Data(), notification)
 	if err != nil {
-		// reject event
-		evt.Reject()
-		return fmt.Errorf("unmarshal user: %w", err)
+		// discard message
+		msg.Nack()
+		return fmt.Errorf("unmarshal user match requested notification: %w", err)
 	}
 
-	// create user from event
+	// create user from notification
 	user := matchdomain.NewUser(
-		eventPayload.UserID,
-		eventPayload.UserAge,
-		eventPayload.UserGender,
-		eventPayload.Preferences,
+		notification.GetUserAttributes().GetId(),
+		notification.GetUserAttributes().GetAge(),
+		toGender(notification.GetUserAttributes().GetGender()),
+		matchmaking.DefaultPreferences().
+			WithMinAge(notification.GetUserPreferences().GetMinAge()).
+			WithMaxAge(notification.GetUserPreferences().GetMaxAge()).
+			WithGender(toGender(notification.GetUserPreferences().GetGender())).
+			WithInterests(notification.GetUserPreferences().GetInterests()),
 	)
 
 	// attempt to match user with preferences
-	err = h.matchmakingProcessor.ProcessMatchRequest(ctx, user)
+	err = h.matchmakingProcessor.ProcessMatchRequest(ctx, *user)
 	if err != nil {
-		// nack event to retry
-		evt.Nack()
+		// nack msg to retry
+		msg.Nack()
 		return fmt.Errorf("attempt match with preferences: %w", err)
 	}
 
-	// ack event
-	evt.Ack()
+	// ack msg
+	msg.Ack()
 	return nil
+}
+
+func toGender(g chatpbv1.Gender) gender.Gender {
+	switch g {
+	case chatpbv1.Gender_GENDER_FEMALE:
+		return gender.Female
+	case chatpbv1.Gender_GENDER_MALE:
+		return gender.Male
+	default:
+		return gender.Unspecified
+	}
 }

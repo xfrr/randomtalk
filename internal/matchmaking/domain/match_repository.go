@@ -3,7 +3,7 @@ package matchdomain
 import (
 	"context"
 
-	domainerror "github.com/xfrr/randomtalk/internal/shared/domain-error"
+	domainerror "github.com/xfrr/randomtalk/internal/shared/domain"
 )
 
 var (

@@ -21,7 +21,7 @@ type UserStore struct {
 // AddUser implements matchdomain.UserStore.
 func (u *UserStore) AddUser(ctx context.Context, user matchdomain.User) error {
 	// 1. serialize the user
-	body, err := matchdomain.MarshalUser(&user)
+	body, err := user.MarshalJSON()
 	if err != nil {
 		return err
 	}
@@ -59,12 +59,14 @@ func (u *UserStore) GetAll(ctx context.Context) ([]*matchdomain.User, error) {
 			continue
 		}
 
-		user, err := matchdomain.UnmarshalUser(userFound.Value())
-		if err != nil {
-			return nil, err
+		var user matchdomain.User
+		unmarshalErr := user.UnmarshalJSON(userFound.Value())
+		if unmarshalErr != nil {
+			// TODO: log the error
+			continue
 		}
 
-		users = append(users, user)
+		users = append(users, &user)
 	}
 
 	return users, nil

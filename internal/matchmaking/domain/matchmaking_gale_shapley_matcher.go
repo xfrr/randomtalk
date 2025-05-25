@@ -136,6 +136,6 @@ func isMutuallyCompatible(u1, u2 *User) bool {
 		return false
 	}
 
-	return u1.MatchPreferences().IsSatisfiedBy(u2) &&
-		u2.MatchPreferences().IsSatisfiedBy(u1)
+	return u1.Preferences().IsSatisfiedBy(u2) &&
+		u2.Preferences().IsSatisfiedBy(u1)
 }

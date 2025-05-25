@@ -13,9 +13,9 @@ import (
 	"github.com/xfrr/go-cqrsify/aggregate"
 	"github.com/xfrr/go-cqrsify/aggregate/event"
 	"github.com/xfrr/randomtalk/internal/shared/eventstore"
-	"github.com/xfrr/randomtalk/internal/shared/xnats"
 
 	matchdom "github.com/xfrr/randomtalk/internal/matchmaking/domain"
+	xnats "github.com/xfrr/randomtalk/internal/shared/nats"
 )
 
 const (

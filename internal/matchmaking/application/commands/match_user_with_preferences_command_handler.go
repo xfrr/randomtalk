@@ -30,18 +30,18 @@ func (h *MatchmakingCommandHandler) ProcessMatchUserWithPreferencesCommand(
 ) (interface{}, error) {
 	log.Debug().
 		Str("user_id", cmd.UserID).
-		Int("user_age", cmd.UserAge).
-		Any("user_preferences", cmd.UserMatchPreferences).
+		Int32("user_age", cmd.UserAge).
+		Any("user_preferences", cmd.UserPreferences).
 		Msg("match user command received")
 
 	requesterUser := matchdomain.NewUser(
 		cmd.UserID,
 		cmd.UserAge,
 		cmd.UserGender,
-		&cmd.UserMatchPreferences,
+		cmd.UserPreferences,
 	)
 
-	err := h.matchmakingService.ProcessMatchRequest(ctx, requesterUser)
+	err := h.matchmakingService.ProcessMatchRequest(ctx, *requesterUser)
 	if err != nil {
 		return nil, fmt.Errorf("failed to find best match: %w", err)
 	}

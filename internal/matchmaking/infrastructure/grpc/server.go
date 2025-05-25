@@ -35,18 +35,13 @@ func (s *Server) FindMatch(
 ) (*matchpb.FindMatchResponse, error) {
 	cmd := matchcommands.MatchUserWithPreferencesCommand{
 		UserID:     in.GetUserId(),
-		UserAge:    int(in.GetUserAge()),
+		UserAge:    in.GetUserAge(),
 		UserGender: toGender(in.GetUserGender()),
-		UserMatchPreferences: *matchmaking.DefaultPreferences().
-			WithMinAge(int(in.GetMatchPreferences().GetMinAge())).
-			WithMaxAge(int(in.GetMatchPreferences().GetMaxAge())).
+		UserPreferences: matchmaking.DefaultPreferences().
+			WithMinAge(in.GetMatchPreferences().GetMinAge()).
+			WithMaxAge(in.GetMatchPreferences().GetMaxAge()).
 			WithGender(toGender(in.GetMatchPreferences().GetGender())).
-			WithInterests(in.GetMatchPreferences().GetInterests()).
-			WithMaxWaitTimeSeconds(in.GetMatchPreferences().GetMaxWaitTimeSeconds()).
-			WithMaxDistanceKm(
-				toLocation(in.GetUserLocation()),
-				in.GetMatchPreferences().GetMaxDistanceKm(),
-			),
+			WithInterests(in.GetMatchPreferences().GetInterests()),
 	}
 
 	res, err := cqrs.Dispatch[*matchcommands.MatchUserWithPreferencesResponse](ctx, s.cmdbus, cmd)
@@ -96,13 +91,13 @@ func (s *Server) Start(addr string) error {
 func toGender(g matchpb.Gender) gender.Gender {
 	switch g {
 	case matchpb.Gender_GENDER_UNSPECIFIED:
-		return gender.GenderUnspecified
+		return gender.Unspecified
 	case matchpb.Gender_GENDER_MALE:
-		return gender.GenderMale
+		return gender.Male
 	case matchpb.Gender_GENDER_FEMALE:
-		return gender.GenderFemale
+		return gender.Female
 	default:
-		return gender.GenderUnspecified
+		return gender.Unspecified
 	}
 }
 

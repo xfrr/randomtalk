@@ -7,16 +7,16 @@ import (
 
 // MatchCreatedEvent is an event that is published when a match  is created.
 type MatchCreatedEvent struct {
-	MatchID                       string                       `json:"match_id"`
-	MatchUserRequesterID          string                       `json:"match_user_requester_id"`
-	MatchUserRequesterAge         int                          `json:"match_user_requester_age"`
-	MatchUserRequesterGender      gender.Gender                `json:"match_user_requester_gender"`
-	MatchUserRequesterPreferences matchmaking.MatchPreferences `json:"match_user_requester_preferences"`
+	MatchID                       string                  `json:"match_id"`
+	MatchUserRequesterID          string                  `json:"match_user_requester_id"`
+	MatchUserRequesterAge         int32                   `json:"match_user_requester_age"`
+	MatchUserRequesterGender      gender.Gender           `json:"match_user_requester_gender"`
+	MatchUserRequesterPreferences matchmaking.Preferences `json:"match_user_requester_preferences"`
 
-	MatchUserMatchedID          string                       `json:"match_user_matched_id"`
-	MatchUserMatchedAge         int                          `json:"match_user_matched_age"`
-	MatchUserMatchedGender      gender.Gender                `json:"match_user_matched_gender"`
-	MatchUserMatchedPreferences matchmaking.MatchPreferences `json:"match_user_matched_preferences"`
+	MatchUserMatchedID          string                  `json:"match_user_matched_id"`
+	MatchUserMatchedAge         int32                   `json:"match_user_matched_age"`
+	MatchUserMatchedGender      gender.Gender           `json:"match_user_matched_gender"`
+	MatchUserMatchedPreferences matchmaking.Preferences `json:"match_user_matched_preferences"`
 }
 
 func (e MatchCreatedEvent) EventName() string {
@@ -33,10 +33,10 @@ func NewMatchCreatedEvent(
 		MatchUserRequesterID:          requesterUser.ID(),
 		MatchUserRequesterAge:         requesterUser.Age(),
 		MatchUserRequesterGender:      requesterUser.Gender(),
-		MatchUserRequesterPreferences: requesterUser.MatchPreferences(),
+		MatchUserRequesterPreferences: requesterUser.Preferences(),
 		MatchUserMatchedID:            matchedUser.ID(),
 		MatchUserMatchedAge:           matchedUser.Age(),
 		MatchUserMatchedGender:        matchedUser.Gender(),
-		MatchUserMatchedPreferences:   matchedUser.MatchPreferences(),
+		MatchUserMatchedPreferences:   matchedUser.Preferences(),
 	}
 }

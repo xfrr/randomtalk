@@ -37,7 +37,7 @@ func (s *TraceableMatchmakingService) ProcessMatchRequest(ctx context.Context, u
 		trace.WithTimestamp(time.Now()),
 		trace.WithAttributes(
 			attribute.String("user_id", user.ID()),
-			attribute.Int("user_age", user.Age()),
+			attribute.Int("user_age", int(user.Age())),
 			attribute.String("user_gender", user.Gender().String()),
 		))
 	defer span.End()

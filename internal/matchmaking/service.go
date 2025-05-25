@@ -10,21 +10,23 @@ import (
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nats.go/jetstream"
 	"github.com/rs/zerolog"
-	matchCommands "github.com/xfrr/randomtalk/internal/matchmaking/application/commands"
-	matchQueries "github.com/xfrr/randomtalk/internal/matchmaking/application/queries"
-	matchmakingConfig "github.com/xfrr/randomtalk/internal/matchmaking/config"
-	matchmakingDomain "github.com/xfrr/randomtalk/internal/matchmaking/domain"
-	matchmakingGrpc "github.com/xfrr/randomtalk/internal/matchmaking/infrastructure/grpc"
-	matchmakingHandlers "github.com/xfrr/randomtalk/internal/matchmaking/infrastructure/handlers"
-	matchmakingInmemory "github.com/xfrr/randomtalk/internal/matchmaking/infrastructure/memory"
-	matchmakingNats "github.com/xfrr/randomtalk/internal/matchmaking/infrastructure/nats"
-	matchmakingTrace "github.com/xfrr/randomtalk/internal/matchmaking/infrastructure/tracing"
+	"go.opentelemetry.io/otel/trace"
+
 	"github.com/xfrr/randomtalk/internal/shared/env"
 	"github.com/xfrr/randomtalk/internal/shared/logging"
 	"github.com/xfrr/randomtalk/internal/shared/messaging"
+	xnats "github.com/xfrr/randomtalk/internal/shared/nats"
+
+	commands "github.com/xfrr/randomtalk/internal/matchmaking/application/commands"
+	queries "github.com/xfrr/randomtalk/internal/matchmaking/application/queries"
+	config "github.com/xfrr/randomtalk/internal/matchmaking/config"
+	domain "github.com/xfrr/randomtalk/internal/matchmaking/domain"
+	grpc "github.com/xfrr/randomtalk/internal/matchmaking/infrastructure/grpc"
+	handlers "github.com/xfrr/randomtalk/internal/matchmaking/infrastructure/handlers"
+	inMemoryAdapter "github.com/xfrr/randomtalk/internal/matchmaking/infrastructure/memory"
+	natsAdapter "github.com/xfrr/randomtalk/internal/matchmaking/infrastructure/nats"
+	tracing "github.com/xfrr/randomtalk/internal/matchmaking/infrastructure/tracing"
 	xotel "github.com/xfrr/randomtalk/internal/shared/otel"
-	"github.com/xfrr/randomtalk/internal/shared/xnats"
-	"go.opentelemetry.io/otel/trace"
 )
 
 var (
@@ -35,13 +37,13 @@ var (
 // when initializing a new matchmaking service.
 type Service struct {
 	traceProvider      trace.TracerProvider
-	config             matchmakingConfig.Config
+	config             config.Config
 	version            string
 	logger             *zerolog.Logger
 	natsConnection     *nats.Conn
-	grpcServer         *matchmakingGrpc.Server
+	grpcServer         *grpc.Server
 	grpcServerCloser   func()
-	matchmakingService matchmakingDomain.MatchmakingProcessor
+	matchmakingService domain.MatchmakingProcessor
 }
 
 // MustInitService initializes a new matchmaking service with the provided options.
@@ -69,15 +71,15 @@ func NewService(opts ...InitOption) (*Service, error) {
 	defer cancel()
 
 	svc := &Service{
-		config:  matchmakingConfig.Config{},
+		config:  config.Config{},
 		version: "development",
 	}
 
 	for _, opt := range opts {
 		opt(svc)
 	}
-	if svc.config == (matchmakingConfig.Config{}) {
-		svc.config = matchmakingConfig.MustLoadFromEnv()
+	if svc.config == (config.Config{}) {
+		svc.config = config.MustLoadFromEnv()
 	}
 
 	if svc.logger == nil {
@@ -107,18 +109,7 @@ func NewService(opts ...InitOption) (*Service, error) {
 		return svc, err
 	}
 
-	err = matchmakingNats.CreateMatchmakingUserMatchRequestsStream(ctx, js)
-	if err != nil {
-		return nil, err
-	}
-
-	// TODO: move this to the chat service
-	_, err = js.CreateOrUpdateStream(ctx, jetstream.StreamConfig{
-		Name:      svc.config.ChatNotificationsConsumerConfig.StreamName,
-		Retention: jetstream.LimitsPolicy,
-		Subjects:  []string{"randomtalk.notifications.chat.>"},
-		MaxAge:    5 * time.Minute,
-	})
+	err = natsAdapter.CreateMatchmakingUserMatchRequestsStream(ctx, js)
 	if err != nil {
 		return nil, err
 	}
@@ -137,11 +128,11 @@ func NewService(opts ...InitOption) (*Service, error) {
 		return svc, err
 	}
 
-	cmdbus := matchCommands.InitCommandBus(ctx, svc.matchmakingService)
-	querybus := matchQueries.InitQueryBus(ctx)
+	cmdbus := commands.InitCommandBus(ctx, svc.matchmakingService)
+	querybus := queries.InitQueryBus(ctx)
 
 	if svc.config.GrpcServerEnabled {
-		svc.grpcServer, svc.grpcServerCloser, err = matchmakingGrpc.NewServer(cmdbus, querybus)
+		svc.grpcServer, svc.grpcServerCloser, err = grpc.NewServer(cmdbus, querybus)
 		if err != nil {
 			return svc, fmt.Errorf("failed to create gRPC server: %w", err)
 		}
@@ -170,7 +161,7 @@ func (s *Service) start(ctx context.Context) error {
 
 func (s *Service) startChatNotificationConsumer(
 	ctx context.Context,
-	matchmakerService matchmakingDomain.MatchmakingProcessor,
+	matchmakerService domain.MatchmakingProcessor,
 ) {
 	consumer, err := s.initChatNotificationConsumer(ctx)
 	if err != nil {
@@ -179,7 +170,7 @@ func (s *Service) startChatNotificationConsumer(
 	}
 
 	// create user match request event handler
-	userMatchRequestHandler := matchmakingHandlers.NewUserMatchRequestedEventHandler(matchmakerService, s.logger)
+	userMatchRequestHandler := handlers.NewUserMatchRequestedEventHandler(matchmakerService, s.logger)
 
 	s.logger.Debug().
 		Str("consumer_name", s.config.ChatNotificationsConsumerConfig.Name).
@@ -227,7 +218,7 @@ func (s *Service) initChatNotificationConsumer(ctx context.Context) (*xnats.Mess
 			AckWait:        30 * time.Second, // TODO: Adjust based on environment settings
 			MaxDeliver:     3,
 			MaxAckPending:  50, // TODO: Adjust based on environment settings
-			FilterSubjects: []string{"randomtalk.notifications.chat.>"},
+			FilterSubjects: []string{"randomtalk.chat.notifications.>"},
 			BackOff: []time.Duration{
 				500 * time.Millisecond,
 				1 * time.Second,
@@ -240,36 +231,32 @@ func (s *Service) initChatNotificationConsumer(ctx context.Context) (*xnats.Mess
 	return chatNotificationConsumer, nil
 }
 
-func (s *Service) initUserInMemoryStore(_ context.Context) (matchmakingDomain.UserStore, error) {
-	userStore := matchmakingInmemory.NewUserStore(s.logger)
-	return matchmakingTrace.WrapUserStore(userStore, s.traceProvider), nil
+func (s *Service) initUserInMemoryStore(_ context.Context) (domain.UserStore, error) {
+	userStore := inMemoryAdapter.NewUserStore(s.logger)
+	return tracing.WrapUserStore(userStore, s.traceProvider), nil
 }
 
 func (s *Service) initMatchmakerService(
 	ctx context.Context,
 	js jetstream.JetStream,
-	matchRepo matchmakingDomain.MatchRepository,
-) (matchmakingDomain.MatchmakingProcessor, error) {
-	// userStore, err := s.initUserInMemoryStore(ctx)
-	// if err != nil {
-	// 	return nil, err
-	// }
-	userStore, err := matchmakingNats.NewUserStore(ctx, js)
+	matchRepo domain.MatchRepository,
+) (domain.MatchmakingProcessor, error) {
+	userStore, err := natsAdapter.NewUserStore(ctx, js)
 	if err != nil {
 		return nil, err
 	}
 
-	stableMatcher := matchmakingDomain.NewGaleShapleyStableMatcher()
+	stableMatcher := domain.NewGaleShapleyStableMatcher()
 
-	var matchService matchmakingDomain.MatchmakingProcessor
-	matchService, err = matchmakingDomain.NewUserMatchProcessor(
+	var matchService domain.MatchmakingProcessor
+	matchService, err = domain.NewUserMatchProcessor(
 		matchRepo,
 		userStore,
 		stableMatcher,
-		matchmakingDomain.WithLogger(s.logger),
+		domain.WithLogger(s.logger),
 	)
 
-	matchService = matchmakingTrace.WrapMatchmakingService(
+	matchService = tracing.WrapMatchmakingService(
 		matchService,
 		s.traceProvider,
 	)
@@ -280,14 +267,7 @@ func (s *Service) initMatchmakerService(
 	return matchService, nil
 }
 
-// func (s *Service) processMatchRequests(ctx context.Context, matchService matchdomain.MatchmakingService) {
-// 	err := matchService.ProcessMatchQueue(ctx)
-// 	if err != nil {
-// 		s.logger.Error().Err(err).Msg("failed to process match requests")
-// 	}
-// }
-
-func initOtelTraces(ctx context.Context, config matchmakingConfig.Config, serviceVersion string) (trace.TracerProvider, error) {
+func initOtelTraces(ctx context.Context, config config.Config, serviceVersion string) (trace.TracerProvider, error) {
 	traceProvider, err := xotel.InitTracerProvider(ctx,
 		xotel.WithServiceName(config.ServiceName),
 		xotel.WithServiceVersion(serviceVersion),
@@ -300,7 +280,7 @@ func initOtelTraces(ctx context.Context, config matchmakingConfig.Config, servic
 	return traceProvider, nil
 }
 
-func (s *Service) setupNatsConnection(config matchmakingConfig.Config) error {
+func (s *Service) setupNatsConnection(config config.Config) error {
 	var err error
 	s.natsConnection, err = nats.Connect(config.NatsConfig.URI,
 		nats.ReconnectWait(5*time.Second),
@@ -313,7 +293,7 @@ func (s *Service) setupNatsConnection(config matchmakingConfig.Config) error {
 		nats.ErrorHandler(func(_ *nats.Conn, _ *nats.Subscription, err error) {
 			s.logger.Error().Err(err).Msg("NATS error")
 		}),
-		nats.ReconnectHandler(func(c *nats.Conn) {
+		nats.ReconnectHandler(func(_ *nats.Conn) {
 			s.logger.Info().Msg("reconnected to NATS")
 		}),
 	)
@@ -323,9 +303,9 @@ func (s *Service) setupNatsConnection(config matchmakingConfig.Config) error {
 	return nil
 }
 
-func (s *Service) initMatchRepository(ctx context.Context, js jetstream.JetStream) (matchmakingDomain.MatchRepository, error) {
-	var matchRepo matchmakingDomain.MatchRepository
-	matchRepo, err := matchmakingNats.NewMatchStreamRepository(
+func (s *Service) initMatchRepository(ctx context.Context, js jetstream.JetStream) (domain.MatchRepository, error) {
+	var matchRepo domain.MatchRepository
+	matchRepo, err := natsAdapter.NewMatchStreamRepository(
 		ctx, js, xnats.
 			NewStreamConfig("randomtalk_matchmaking_match_events", "randomtalk.matchmaking.matches.>").
 			WithDenyDelete().
@@ -339,5 +319,5 @@ func (s *Service) initMatchRepository(ctx context.Context, js jetstream.JetStrea
 		return nil, err
 	}
 
-	return matchmakingTrace.WrapMatchRepository(matchRepo, s.traceProvider), nil
+	return tracing.WrapMatchRepository(matchRepo, s.traceProvider), nil
 }

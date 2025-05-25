@@ -22,7 +22,7 @@ func (m *Match) ID() string {
 	return m.AggregateID()
 }
 
-func (m *Match) Age() int {
+func (m *Match) Age() int32 {
 	return m.requester.age
 }
 
@@ -30,12 +30,8 @@ func (m *Match) Gender() gender.Gender {
 	return m.requester.gender
 }
 
-func (m *Match) Preferences() matchmaking.MatchPreferences {
-	if m.requester.preferences == nil {
-		return *matchmaking.DefaultPreferences()
-	}
-
-	return *m.requester.preferences
+func (m *Match) Preferences() matchmaking.Preferences {
+	return m.requester.Preferences()
 }
 
 func (m *Match) CreatedAt() time.Time {
@@ -62,17 +58,17 @@ func (m *Match) handleMatchCreatedEvent(evt aggregate.Event) {
 	}
 
 	m.requester = &User{
-		id:          payload.MatchUserRequesterID,
-		age:         payload.MatchUserRequesterAge,
-		gender:      payload.MatchUserRequesterGender,
-		preferences: &payload.MatchUserRequesterPreferences,
+		id:     payload.MatchUserRequesterID,
+		age:    payload.MatchUserRequesterAge,
+		gender: payload.MatchUserRequesterGender,
+		prefs:  payload.MatchUserRequesterPreferences,
 	}
 
 	m.match = &User{
-		id:          payload.MatchUserMatchedID,
-		age:         payload.MatchUserMatchedAge,
-		gender:      payload.MatchUserMatchedGender,
-		preferences: &payload.MatchUserMatchedPreferences,
+		id:     payload.MatchUserMatchedID,
+		age:    payload.MatchUserMatchedAge,
+		gender: payload.MatchUserMatchedGender,
+		prefs:  payload.MatchUserMatchedPreferences,
 	}
 
 	m.createdAt = time.Now()
