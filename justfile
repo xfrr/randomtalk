@@ -44,14 +44,14 @@ go-generate-protobuf:
 # test Go codebase
 go-tests:
   @go test ./... -v -race \
-    -timeout=10m -count=1 \
+    -timeout=30s -count=1 \
     -cover -coverpkg=./... -covermode=atomic \
     -coverprofile=.coverage
 
 # run Go integration tests
 go-integration-tests:
   @go test ./... -v -tags=integration \
-    -race -timeout=10m -count=1 \
+    -race -timeout=30s -count=1 \
     -cover -coverpkg=./... -covermode=atomic \
     -coverprofile=.integration.coverage
 
