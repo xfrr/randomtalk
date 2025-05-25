@@ -15,13 +15,6 @@ import (
 
 var _ eventstore.Stream = (*Stream)(nil)
 
-// Stream is an event store backed by NATS JetStream.
-type Stream struct {
-	streamConfig jetstream.StreamConfig
-	js           jetstream.JetStream
-	stream       jetstream.Stream
-}
-
 // CreateStream creates or updates a JetStream stream and returns a Stream implementation.
 func CreateStream(ctx context.Context, js jetstream.JetStream, config StreamConfig) (*Stream, error) {
 	stream, err := js.CreateOrUpdateStream(ctx, config.streamConfig)
@@ -36,6 +29,13 @@ func CreateStream(ctx context.Context, js jetstream.JetStream, config StreamConf
 	}, nil
 }
 
+// Stream is an event store backed by NATS JetStream.
+type Stream struct {
+	streamConfig jetstream.StreamConfig
+	js           jetstream.JetStream
+	stream       jetstream.Stream
+}
+
 // Name returns the JetStream stream name.
 func (s *Stream) Name() string {
 	return s.streamConfig.Name
@@ -47,7 +47,7 @@ func (s *Stream) Append(ctx context.Context, events []event.Event) (eventstore.A
 		StreamName: s.streamConfig.Name,
 	}
 	if len(events) == 0 {
-		return res, errors.New("no events to append")
+		return res, nil
 	}
 
 	// Determine last sequence for concurrency checks (if needed).
@@ -107,6 +107,7 @@ func (s *Stream) Append(ctx context.Context, events []event.Event) (eventstore.A
 		// Update last sequence and event ID after a successful publish.
 		res.LastSequence = puback.Sequence
 		res.LastEventID = e.ID()
+		res.NumEvents++
 	}
 
 	return res, nil
@@ -154,17 +155,12 @@ func (s *Stream) Pull(ctx context.Context, batchSize int, options ...eventstore.
 		}
 		events = append(events, e)
 	}
-
-	if len(events) == 0 {
-		return nil, eventstore.ErrNoEventsFound
-	}
 	return events, nil
 }
 
 // Fetch streams events continuously in batches, sending them to the returned channel.
 func (s *Stream) Fetch(ctx context.Context, batchSize int, options ...eventstore.FetchOption) (<-chan []eventstore.Event, error) {
 	fetchOptions := &eventstore.FetchOptions{
-		// TODO: change to 30s
 		MaxWaitTime: 10 * time.Second,
 	}
 	for _, opt := range options {
@@ -270,7 +266,6 @@ func (s *Stream) getLastSequence(ctx context.Context, subject string) (string, u
 }
 
 func (s *Stream) fetchLastMessage(ctx context.Context, opts *eventstore.FetchOptions) (*eventstore.Event, error) {
-	// Called under FetchLast’s read lock, no extra locking needed here.
 	stream, err := s.js.Stream(ctx, s.streamConfig.Name)
 	if err != nil {
 		return nil, err
@@ -306,7 +301,7 @@ func (s *Stream) fetchLastMessageInStream(ctx context.Context, stream jetstream.
 
 // fetchBatchSize returns the total messages in the stream, safely cast to int.
 func (s *Stream) fetchBatchSize(ctx context.Context) (int, error) {
-	// Called under Pull’s lock, no extra locking needed here.
+	// Called under Pull's lock, no extra locking needed here.
 	stream, err := s.js.Stream(ctx, s.streamConfig.Name)
 	if err != nil {
 		return 0, err

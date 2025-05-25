@@ -57,9 +57,6 @@ type AppendResult struct {
 
 	// NumEvents is the number of events appended.
 	NumEvents int
-
-	// Error is the error of the operation.
-	Error error
 }
 
 // Stream exposes the methods to persist and retrieve events.

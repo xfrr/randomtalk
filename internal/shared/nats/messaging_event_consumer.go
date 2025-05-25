@@ -56,6 +56,26 @@ func (c *MessagingEventConsumer) Subscribe(ctx context.Context) (<-chan *messagi
 	return eventsCh, nil
 }
 
+func (c *MessagingEventConsumer) Consume(ctx context.Context, handle func(ctx context.Context, event *messaging.Event)) error {
+	eventsCh, err := c.Subscribe(ctx)
+	if err != nil {
+		return err
+	}
+
+	for {
+		select {
+		case <-ctx.Done():
+			return nil
+		case event, ok := <-eventsCh:
+			if !ok {
+				return nil
+			}
+
+			handle(ctx, event)
+		}
+	}
+}
+
 func (c *MessagingEventConsumer) startListening(
 	ctx context.Context,
 	messages jetstream.MessagesContext,
@@ -128,6 +148,12 @@ func (c *MessagingEventConsumer) startListening(
 				}
 			}(msg)
 
+			c.logger.Debug().
+				Str("id", msgEvent.ID()).
+				Str("subject", msg.Subject()).
+				Msg("received nats messaging event")
+
+			// set the stream name
 			// send the event to the output channel
 			outCh <- msgEvent
 		}
