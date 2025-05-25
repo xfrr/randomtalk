@@ -1,4 +1,10 @@
 {
+  "yaml.schemas": {
+    "https://raw.githubusercontent.com/compose-spec/compose-spec/master/schema/compose-spec.json": [
+      "*compose*.yml"
+    ],
+    "https://asyncapi.com/definitions/3.0.0/asyncapi.json": ["*asyncapi*.yml"]
+  },
   "go.testEnvVars": {
     "GO_ENV": "test"
   },
