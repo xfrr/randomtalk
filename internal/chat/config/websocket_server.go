@@ -9,11 +9,11 @@ type HubWebsocketServer struct {
 	// ReadBufferSize is the size of the read buffer for the websocket connection.
 	ReadBufferSize int `env:"READ_BUFFER_SIZE" default:"1024"`
 	// ReadTimeoutSeconds is the maximum time the server will wait for a read from the client.
-	ReadTimeoutSeconds int `env:"READ_TIMEOUT_SECONDS" default:"10"`
+	ReadTimeoutSeconds int `env:"READ_TIMEOUT_SECONDS" default:"60"`
 	// WriteTimeoutSeconds is the maximum time the server will wait for a write to the client.
-	WriteTimeoutSeconds int `env:"WRITE_TIMEOUT_SECONDS" default:"10"`
+	WriteTimeoutSeconds int `env:"WRITE_TIMEOUT_SECONDS" default:"60"`
 	// IdleTimeoutSeconds is the maximum time the server will wait for a new request.
-	IdleTimeoutSeconds int `env:"IDLE_TIMEOUT_SECONDS" default:"10"`
+	IdleTimeoutSeconds int `env:"IDLE_TIMEOUT_SECONDS" default:"60"`
 	// WriteBufferSize is the size of the write buffer for the websocket connection.
 	WriteBufferSize int `env:"WRITE_BUFFER_SIZE" default:"1024"`
 	// PongWaitSeconds is the maximum time the server will wait for a ping from the client.

@@ -35,14 +35,13 @@ func ServeHTTP(cfg chatconfig.HubWebsocketServer, handler http.HandlerFunc) erro
 }
 
 func respondError(client *Client, msgID string, err error) {
-	_, errMsg := formatErrorResponse(err)
+	code, errMsg := formatErrorResponse(err)
 	rawMsg := &chatpb.ServerMessage{
-		Id:        msgID,
-		Type:      chatpb.ServerMessage_TYPE_ERROR,
-		Timestamp: timestamppb.Now(),
-		Payload: &chatpb.ServerMessage_Payload{
-			Content: &chatpb.ServerMessage_Payload_Error{
-				Error: status.New(codes.Internal, errMsg).Proto(),
+		Kind: chatpb.Kind_KIND_SYSTEM,
+		Data: &chatpb.ServerMessage_Error{
+			Error: &chatpb.ErrorMessage{
+				Status:    status.New(codes.Code(code), errMsg).Proto(),
+				Timestamp: timestamppb.Now(),
 			},
 		},
 	}
@@ -54,17 +53,17 @@ func respond(client *Client, msg *chatpb.ServerMessage) {
 	client.send <- rawMsg
 }
 
-func formatErrorResponse(err error) (int32, string) {
-	var code int32
+func formatErrorResponse(err error) (uint32, string) {
+	var code uint32
 	var message string
 
 	switch {
 	case errors.Is(err, cqrs.ErrHandlerNotFound):
 		code = http.StatusNotFound
-		message = "Command not found"
+		message = "Command not found: " + err.Error()
 	default:
 		code = http.StatusInternalServerError
-		message = "Internal server error"
+		message = "Internal server error: " + err.Error()
 	}
 	return code, message
 }

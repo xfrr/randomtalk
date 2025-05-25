@@ -9,14 +9,17 @@ import (
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nats.go/jetstream"
 	"github.com/rs/zerolog"
+	"github.com/xfrr/randomtalk/internal/shared/env"
+	"github.com/xfrr/randomtalk/internal/shared/logging"
+	"go.opentelemetry.io/otel/trace"
+
 	chatcommands "github.com/xfrr/randomtalk/internal/chat/application/commands"
 	chatqueries "github.com/xfrr/randomtalk/internal/chat/application/queries"
 	chatconfig "github.com/xfrr/randomtalk/internal/chat/config"
 	chathttp "github.com/xfrr/randomtalk/internal/chat/infrastructure/http"
-	"github.com/xfrr/randomtalk/internal/shared/env"
-	"github.com/xfrr/randomtalk/internal/shared/logging"
+	chatnats "github.com/xfrr/randomtalk/internal/chat/infrastructure/nats"
+	xnats "github.com/xfrr/randomtalk/internal/shared/nats"
 	xotel "github.com/xfrr/randomtalk/internal/shared/otel"
-	"go.opentelemetry.io/otel/trace"
 )
 
 var (
@@ -26,12 +29,15 @@ var (
 // Service defines the dependencies that can be overridden
 // when initializing a new chat service.
 type Service struct {
-	version          string
-	traceProvider    trace.TracerProvider
-	config           chatconfig.Config
-	logger           *zerolog.Logger
-	natsConnection   *nats.Conn
-	httpWebsocketHub *chathttp.Hub
+	version                    string
+	traceProvider              trace.TracerProvider
+	config                     chatconfig.Config
+	logger                     *zerolog.Logger
+	natsConnection             *nats.Conn
+	cmdbus                     chatcommands.CommandBus
+	querybus                   chatqueries.QueryBus
+	matchNotificationsConsumer *xnats.MessagingEventConsumer
+	httpWebsocketHub           *chathttp.Hub
 }
 
 func (s *Service) Start(ctx context.Context) {
@@ -40,7 +46,7 @@ func (s *Service) Start(ctx context.Context) {
 		s.shutdown()
 	}()
 
-	go s.httpWebsocketHub.Run()
+	go s.httpWebsocketHub.Run(ctx)
 
 	// serve http and websocket
 	go func() {
@@ -126,9 +132,23 @@ func NewService(opts ...InitOption) (*Service, error) {
 		return svc, err
 	}
 
+	chatSessionRepo, err := chatnats.NewChatSessionRepository(
+		ctx,
+		js,
+		xnats.
+			NewStreamConfig(svc.config.ChatSessionStreamConfig.Name, "randomtalk.chat.sessions.>").
+			WithReplicas(1).
+			WithMaxAge(24*time.Hour).
+			WithRetention(jetstream.LimitsPolicy),
+	)
+	if err != nil {
+		return nil, err
+	}
+	//
+	// TODO: Create notification stream and subscribe for chat session domain events
 	_, err = js.CreateOrUpdateStream(ctx, jetstream.StreamConfig{
 		Name:      svc.config.NotificationStreamConfig.Name,
-		Subjects:  []string{"randomtalk.notifications.chat.>"},
+		Subjects:  []string{"randomtalk.chat.notifications.>"},
 		Retention: jetstream.LimitsPolicy,
 		MaxAge:    5 * time.Minute,
 	})
@@ -136,10 +156,19 @@ func NewService(opts ...InitOption) (*Service, error) {
 		return nil, err
 	}
 
-	cmdbus, querybus := chatcommands.InitCommandBus(ctx), chatqueries.InitQueryBus(ctx)
+	matchRequester := chatnats.NewMatchRequester(svc.config.NotificationStreamConfig.Name, js)
+
+	svc.cmdbus, svc.querybus = chatcommands.InitCommandBus(ctx, chatSessionRepo, matchRequester, *svc.logger), chatqueries.InitQueryBus(ctx)
+
+	matchNotificationsConsumer, err := svc.initMatchNotificationsConsumer(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to initialize match notifications consumer: %w", err)
+	}
+
 	svc.httpWebsocketHub = chathttp.NewHub(
-		cmdbus,
-		querybus,
+		svc.cmdbus,
+		svc.querybus,
+		matchNotificationsConsumer,
 		chathttp.WithLogger(*svc.logger),
 	)
 
@@ -182,3 +211,51 @@ func (s *Service) setupNatsConnection(config chatconfig.Config) error {
 
 	return nil
 }
+
+func (s *Service) initMatchNotificationsConsumer(ctx context.Context) (*xnats.MessagingEventConsumer, error) {
+	chatNotificationConsumer, err := xnats.CreateMessagingEventConsumer(
+		ctx,
+		s.natsConnection,
+		s.logger,
+		s.config.MatchNotificationsConsumerConfig.StreamName,
+		jetstream.ConsumerConfig{
+			Name:           s.config.MatchNotificationsConsumerConfig.Name,
+			Durable:        s.config.MatchNotificationsConsumerConfig.Name,
+			AckPolicy:      jetstream.AckExplicitPolicy,
+			DeliverPolicy:  jetstream.DeliverAllPolicy,
+			AckWait:        15 * time.Second, // TODO: Adjust based on environment settings
+			MaxDeliver:     3,
+			MaxAckPending:  50, // TODO: Adjust based on environment settings
+			FilterSubjects: []string{"randomtalk.matchmaking.matches.>"},
+			BackOff: []time.Duration{
+				500 * time.Millisecond,
+				1 * time.Second,
+			},
+		},
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return chatNotificationConsumer, nil
+}
+
+// func (s *Service) startMatchNotificationsConsumer(
+// 	ctx context.Context,
+// ) {
+// 	// create user match request event handler
+// 	matchNotificationsHandler := chatinfrahandlers.NewUserMatchedNotificationHandler(s.cmdbus, s.logger)
+
+// 	s.logger.Debug().
+// 		Str("consumer_name", s.config.MatchNotificationsConsumerConfig.Name).
+// 		Str("stream_name", s.config.MatchNotificationsConsumerConfig.StreamName).
+// 		Msg("subscribing to match notifications...")
+// 	if err := messaging.HandleEvents(
+// 		ctx,
+// 		s.logger,
+// 		s.matchNotificationsConsumer,
+// 		matchNotificationsHandler.Handle,
+// 	); err != nil {
+// 		s.logger.Error().Err(err).Msg("failed to start match notifications consumer")
+// 	}
+// }

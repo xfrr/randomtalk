@@ -11,11 +11,13 @@ type Config struct {
 	ServiceName        string `env:"SERVICE_NAME" default:"randomtalk-chat"`
 	ServiceEnvironment string `env:"SERVICE_ENVIRONMENT" default:"development"`
 
-	NotificationStreamConfig `envPrefix:"NATS_NOTIFICATION_STREAM_"`
-	HubWebsocketServer       `envPrefix:"HUB_WEBSOCKET_SERVER_"`
-	LoggingConfig            `envPrefix:"LOGGING_"`
-	NatsConfig               `envPrefix:"NATS_"`
-	Observability            `envPrefix:"OBSERVABILITY_"`
+	MatchNotificationsConsumerConfig `envPrefix:"NATS_MATCH_NOTIFICATIONS_CONSUMER_"`
+	ChatSessionStreamConfig          `envPrefix:"CHAT_SESSION_STREAM_"`
+	NotificationStreamConfig         `envPrefix:"NATS_NOTIFICATION_STREAM_"`
+	HubWebsocketServer               `envPrefix:"HUB_WEBSOCKET_SERVER_"`
+	LoggingConfig                    `envPrefix:"LOGGING_"`
+	NatsConfig                       `envPrefix:"NATS_"`
+	Observability                    `envPrefix:"OBSERVABILITY_"`
 }
 
 // MustLoadFromEnv loads the configuration from the environment variables.
