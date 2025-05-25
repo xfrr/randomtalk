@@ -15,5 +15,6 @@
   "protoc": {
     "path": "/opt/homebrew/bin/protoc",
     "options": ["-I ./proto"]
-  }
+  },
+  "triggerTaskOnSave.tasks": {}
 }

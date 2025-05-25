@@ -1,0 +1,13 @@
+{
+  "recommendations": [
+    "gruntfuggly.triggertaskonsave",
+    "golang.go",
+    "pbkit.vscode-pbkit",
+    "premparihar.gotestexplorer",
+    "vadzimnestsiarenka.helm-template-preview-and-more",
+    "yokoe.vscode-postfix-go",
+    "bufbuild.vscode-buf",
+    "mikestead.dotenv",
+    "ms-azuretools.vscode-docker"
+  ]
+}
