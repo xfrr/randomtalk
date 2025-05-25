@@ -1,0 +1,13 @@
+syntax = "proto3";
+package randomtalk.chat.v1;
+
+import "google/protobuf/timestamp.proto";
+import "google/rpc/status.proto";
+
+option go_package = "github.com/xfrr/randomtalk/proto/v1/chatpb";
+
+// ErrorMessage represents an error message sent from the server to the client.
+message ErrorMessage {
+  google.rpc.Status status = 1;
+  google.protobuf.Timestamp timestamp = 2;
+}

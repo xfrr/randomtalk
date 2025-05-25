@@ -5,19 +5,21 @@ import "google/protobuf/timestamp.proto";
 
 option go_package = "github.com/xfrr/randomtalk/proto/v1/chatpb";
 
-// SessionStartedNotification is a message (event) sent when an user connects to the chat
+// UserMatchRequestedNotification is a message (event) sent when an user connects to the chat
 // and a new chat session is created.
-message SessionStartedNotification {
-  string id = 1;
+message UserMatchRequestedNotification {
+  string notification_id = 1;
   string chat_session_id = 2;
-  string user_id = 3;
-  int32 user_age = 4;
-  Gender user_gender = 5;
-  double user_location_latitude = 6;
-  double user_location_longitude = 7;
-  bool is_user_authenticated = 8;
-  UserPreferences user_preferences = 10;
-  google.protobuf.Timestamp started_at = 9;
+  UserAttributes user_attributes = 3;
+  UserPreferences user_preferences = 4;
+  google.protobuf.Timestamp occurred_at = 5;
+}
+
+// UserAttributes contains the user attributes for the chat.
+message UserAttributes {
+  string id = 1;
+  int32 age = 2;
+  Gender gender = 3;
 }
 
 // UserPreferences contains the user preferences for the chat.
@@ -25,9 +27,7 @@ message UserPreferences {
   int32 min_age = 1;
   int32 max_age = 2;
   Gender gender = 3;
-  double max_distance_km = 4;
-  int32 max_wait_time_seconds = 5;
-  repeated string interests = 6;
+  repeated string interests = 4;
 }
 
 // Gender is an enum that represents the user gender.

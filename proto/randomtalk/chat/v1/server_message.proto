@@ -2,25 +2,27 @@ syntax = "proto3";
 package randomtalk.chat.v1;
 
 import "google/protobuf/timestamp.proto";
-import "google/rpc/status.proto";
 import "randomtalk/chat/v1/command.proto";
+import "randomtalk/chat/v1/error_message.proto";
+import "randomtalk/chat/v1/info_message.proto";
+import "randomtalk/chat/v1/notification_message.proto";
 
 option go_package = "github.com/xfrr/randomtalk/proto/v1/chatpb";
 
+enum Kind {
+  KIND_UNSPECIFIED = 0;
+  KIND_SYSTEM = 1; // System message
+  KIND_USER = 2; // User message
+}
+
+// ServerMessage represents a message sent from the server to the client.
 message ServerMessage {
-  string id = 1;
-  Type type = 2;
-  Payload payload = 3;
-  google.protobuf.Timestamp timestamp = 4;
+  Kind kind = 1;
 
-  message Payload {
-    oneof content {
-      google.rpc.Status error = 1;
-    }
-  }
-
-  enum Type {
-    TYPE_UNSPECIFIED = 0;
-    TYPE_ERROR = 1;
+  oneof data {
+    Command command = 2;
+    ErrorMessage error = 3;
+    InfoMessage info = 4;
+    NotificationMessage notification = 5;
   }
 }

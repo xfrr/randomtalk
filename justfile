@@ -16,11 +16,11 @@ up-xray stream_system:
     up -d --build --force-recreate
 
 # stop the docker-compose stack. supports [nats,]
-down stream_system:
+down stream_system="nats":
   @docker-compose \
     -f ./deployments/docker/docker-compose.yml \
     -f ./deployments/docker/{{stream_system}}/docker-compose.yml \
-    down --remove-orphans
+    down --remove-orphans --volumes --rmi all --timeout 0
 
 down-xray stream_system:
   @docker-compose \

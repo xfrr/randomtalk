@@ -1,7 +1,7 @@
 {
   "swagger": "2.0",
   "info": {
-    "title": "randomtalk/chat/v1/chat_session_started.proto",
+    "title": "randomtalk/chat/v1/notification_message.proto",
     "version": "version not set"
   },
   "consumes": [

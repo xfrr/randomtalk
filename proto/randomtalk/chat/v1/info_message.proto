@@ -1,0 +1,31 @@
+syntax = "proto3";
+package randomtalk.chat.v1;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/xfrr/randomtalk/proto/v1/chatpb";
+
+// InfoMessage represents an informational message sent from the server to the client.
+// It can be used to inform the client about various events such as connection status,
+// user status changes, etc.
+// This message is not intended for user-to-user communication.
+message InfoMessage {
+  Type type = 1;
+  Payload payload = 2;
+  google.protobuf.Timestamp timestamp = 3;
+
+  enum Type {
+    TYPE_UNSPECIFIED = 0;
+    TYPE_CONNECTION = 1; // Connection info
+    TYPE_DISCONNECTION = 2; // Disconnection info
+    TYPE_USER_STATUS = 3; // User status info
+    TYPE_MESSAGE_STATUS = 4; // Message status info
+  }
+
+  message Payload {
+    string user_id = 1;
+    string status = 2; // e.g., "online", "offline"
+    string message_id = 3;
+    string message_status = 4; // e.g., "delivered", "read"
+  }
+}

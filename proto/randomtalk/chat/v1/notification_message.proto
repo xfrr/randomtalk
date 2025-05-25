@@ -1,0 +1,27 @@
+syntax = "proto3";
+package randomtalk.chat.v1;
+
+import "google/protobuf/struct.proto";
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/xfrr/randomtalk/proto/v1/chatpb";
+
+// NotificationMessage represents a notification message sent from the server to the client.
+// It can be used to inform the client about various events such as new messages received,
+// user joining/leaving, etc.
+message NotificationMessage {
+  Type type = 1;
+  google.protobuf.Struct payload = 2; // Payload can be a JSON object containing relevant data
+  google.protobuf.Timestamp timestamp = 3;
+
+  enum Type {
+    TYPE_UNSPECIFIED = 0;
+    TYPE_NEW_MATCH = 1; // New match notification
+    TYPE_NEW_MESSAGE = 2; // New message notification
+    TYPE_USER_JOINED = 3; // User joined notification
+    TYPE_USER_LEFT = 4; // User left notification
+    TYPE_USER_TYPING = 5; // User typing notification
+    TYPE_USER_STOP_TYPING = 6; // User stopped typing notification
+    TYPE_USER_STATUS = 7; // User status notification
+  }
+}
