@@ -416,7 +416,7 @@ func (c *Client) writePump() {
 			}
 
 			// Send queued messages in a single frame
-			for range len(c.send) {
+			for len(c.send) > 0 {
 				_, _ = w.Write([]byte("\n"))
 				_, _ = w.Write(<-c.send)
 			}
