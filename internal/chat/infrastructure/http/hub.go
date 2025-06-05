@@ -416,9 +416,15 @@ func (c *Client) writePump() {
 			}
 
 			// Send queued messages in a single frame
-			for len(c.send) > 0 {
-				_, _ = w.Write([]byte("\n"))
-				_, _ = w.Write(<-c.send)
+			for {
+				select {
+				case msg := <-c.send:
+					_, _ = w.Write([]byte("\n"))
+					_, _ = w.Write(msg)
+				default:
+					// Exit the loop when the channel is empty
+					break
+				}
 			}
 
 			if err = w.Close(); err != nil {
