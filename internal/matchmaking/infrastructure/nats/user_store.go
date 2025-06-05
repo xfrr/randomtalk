@@ -104,7 +104,7 @@ func (u *UserStore) RemoveUsers(ctx context.Context, userID ...string) error {
 func NewUserStore(ctx context.Context, js jetstream.JetStream) (*UserStore, error) {
 	// create a new kv store
 	kvstore, err := js.CreateOrUpdateKeyValue(ctx, jetstream.KeyValueConfig{
-		Bucket:  "randomtalk_matchamking_user_store",
+		Bucket:  "randomtalk_matchmaking_user_store",
 		History: 1,
 		TTL:     1 * time.Minute,
 	})

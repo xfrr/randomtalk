@@ -82,7 +82,7 @@ func setupJetStream(t *testing.T) jetstream.JetStream {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
 
-		err = js.DeleteKeyValue(ctx, "randomtalk_matchamking_user_store")
+		err = js.DeleteKeyValue(ctx, "randomtalk_matchmaking_user_store")
 		require.NoError(t, err)
 
 		nc.Close()
