@@ -9,24 +9,27 @@ on:
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
+    services:
+      jetstream:
+        image: nats:alpine
+        options: --name jetstream
     steps:
       - uses: actions/checkout@v3
       - name: Set up Go
         uses: actions/setup-go@v4
         with:
-          go-version: '1.24'
+          go-version: "1.24"
       - name: Install Just
         run: sudo apt-get update && sudo apt-get install -y just
       - name: Build
         run: just go-build
       - name: Run unit tests
         run: just go-tests
-      - name: Start NATS
-        run: docker run -d --name nats -p 4222:4222 -p 8222:8222 nats:2.10.22 --jetstream
-      - name: Wait for NATS
-        run: sleep 5
+      - name: start_jetstream
+        run: |
+          chmod a+x ${{ github.workspace }}/.github/workflows/jetstream-entrypoint.sh
+          docker cp ${{ github.workspace }}/.github/workflows/jetstream-entrypoint.sh jetstream:/usr/local/bin/docker-entrypoint.sh
+          docker restart jetstream
+          sleep 10 # Wait for JetStream to start
       - name: Run integration tests
         run: just go-integration-tests
-      - name: Stop NATS
-        if: always()
-        run: docker rm -f nats
