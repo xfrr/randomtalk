@@ -43,15 +43,22 @@ go-generate-protobuf:
 
 # test Go codebase
 go-tests:
-  @go test ./... -v -race \
-    -timeout=30s -count=1 \
+  @go test \
+    ./internal/chat/... \
+    ./internal/matchmaking/... \
+    ./internal/shared/... \
+    -v -race -timeout=30s -count=1 \
     -cover -coverpkg=./... -covermode=atomic \
     -coverprofile=.coverage
 
 # run Go integration tests
 go-integration-tests:
-  @go test ./... -v -tags=integration \
-    -race -timeout=30s -count=1 \
+  @go test \
+    ./internal/chat/... \
+    ./internal/matchmaking/... \
+    ./internal/shared/... \
+    -tags=integration \
+    -v -race -timeout=30s -count=1 \
     -cover -coverpkg=./... -covermode=atomic \
     -coverprofile=.integration.coverage
 

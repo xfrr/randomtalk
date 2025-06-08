@@ -24,7 +24,7 @@ import (
 
 const (
 	natsURL          = nats.DefaultURL
-	chatSubjectBase  = "randomtalk.notifications.chat.users"
+	chatSubjectBase  = "randomtalk.chat.notifications.sessions"
 	matchmakingTopic = "randomtalk.matchmaking.matches.>"
 	numberOfUsers    = 10
 	expectedMatches  = 5
@@ -64,7 +64,8 @@ func TestRandomtalkIntegration(t *testing.T) {
 
 	// 4) Wait for the result (or test context expiration).
 	select {
-	case res := <-matchResults:
+	case res, ok := <-matchResults:
+		require.True(t, ok, "Expected match results channel to be open")
 		require.Zero(t, res.duplicatedMatches, "Unexpected duplicate matches found")
 		assert.Equal(t, expectedMatches, res.matchesFound, "Unexpected number of matches found")
 	case <-ctx.Done():
