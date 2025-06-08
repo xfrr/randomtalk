@@ -8,7 +8,7 @@ require (
 	github.com/cloudevents/sdk-go v1.2.0
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.26.1
 	github.com/nats-io/nats.go v1.39.1
-	github.com/rs/zerolog v1.33.0
+	github.com/rs/zerolog v1.34.0
 	github.com/spf13/cobra v1.9.1
 	github.com/stretchr/testify v1.10.0
 	github.com/xfrr/randomtalk/internal/chat v0.0.0-20250608223647-dd78d5a23061
