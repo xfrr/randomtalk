@@ -19,7 +19,7 @@ on:
       - "go.sum"
 
 concurrency:
-  group: go-ci
+  group: go-ci-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
