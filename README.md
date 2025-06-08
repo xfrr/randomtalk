@@ -3,6 +3,10 @@
 <p align="center"> A simple chat application that connects users to random people to chat with based on their preferences.</p>
 <p align="center">
   <a href="https://randomtalk.chat">View Live Demo</a>
+  <br/>
+  <a href="https://github.com/xfrr/randomtalk/actions/workflows/go.yml">
+    <img src="https://github.com/xfrr/randomtalk/actions/workflows/go.yml/badge.svg" alt="Go CI"/>
+  </a>
 </p>
 
 ---
