@@ -6,19 +6,28 @@ on:
   pull_request:
     branches: [main]
 
+concurrency:
+  group: go-ci
+  cancel-in-progress: true
+
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
     services:
       jetstream:
         image: nats:alpine
+        ports:
+          - 4222:4222
+          - 8222:8222
         options: --name jetstream
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Set up Go
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v5
         with:
           go-version: "1.24"
+          check-latest: true
+          cache-dependency-path: internal/**/go.sum
       - name: Install Just
         run: sudo apt-get update && sudo apt-get install -y just
       - name: Build
@@ -30,6 +39,7 @@ jobs:
           chmod a+x ${{ github.workspace }}/.github/workflows/jetstream-entrypoint.sh
           docker cp ${{ github.workspace }}/.github/workflows/jetstream-entrypoint.sh jetstream:/usr/local/bin/docker-entrypoint.sh
           docker restart jetstream
-          sleep 10 # Wait for JetStream to start
+      - name: Sleep for JetStream to start
+        run: sleep 10
       - name: Run integration tests
         run: just go-integration-tests
