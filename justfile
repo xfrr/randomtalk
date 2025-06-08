@@ -31,7 +31,8 @@ down-xray stream_system:
 
 # build Go applications
 go-build:
-  @go build ./...
+  @mkdir -p bin
+  @go build -o bin ./cmd/chat-server ./cmd/matchmaker ./cmd/matchmaker-cli 
 
 # generate Go code
 go-generate:
