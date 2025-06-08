@@ -1,9 +1,9 @@
 
 <h3 align="center">RandomTalk</h3>
-<p align="center"> A simple chat application that connects users to random people to chat with based on their preferences.</p>
+<p align="center"> RandomTalk is a simple chat application that connects users to random people to chat with based on their preferences.</p>
 <p align="center">
   <a href="https://randomtalk.chat">View Live Demo</a>
-  <br/>
+  <br/><br/>
   <a href="https://github.com/xfrr/randomtalk/actions/workflows/go.yml">
     <img src="https://github.com/xfrr/randomtalk/actions/workflows/go.yml/badge.svg" alt="Go CI"/>
   </a>
@@ -11,9 +11,7 @@
 
 ---
 
-## 🧐 About <a name = "about"></a>
-
-The main features are:
+## 🚀 Features <a name = "features"></a>
 
 - In-house **Gale-Shapley algorithm** for matching users based on their preferences.
 - Real-time chat using **WebSockets**.
@@ -78,3 +76,7 @@ Once the application is started, you can access the application at the following
 - [Docker](https://www.docker.com/) - Containerization platform.
 - [Kubernetes](https://kubernetes.io/) - Container orchestration platform.
 - [Helm](https://helm.sh/) - Kubernetes package manager.
+
+## 📜 License <a name = "license"></a>
+
+This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.
