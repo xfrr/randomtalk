@@ -4,17 +4,13 @@ on:
   push:
     branches: [main]
     paths:
-      - "cmd/**"
-      - "internal/**"
-      - "proto/**"
+      - "**.go"
       - "go.mod"
       - "go.sum"
   pull_request:
     branches: [main]
     paths:
-      - "cmd/**"
-      - "internal/**"
-      - "proto/**"
+      - "**.go"
       - "go.mod"
       - "go.sum"
 
