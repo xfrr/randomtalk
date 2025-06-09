@@ -3,16 +3,8 @@ name: Go CI
 on:
   push:
     branches: [main]
-    paths:
-      - "**.go"
-      - "go.mod"
-      - "go.sum"
   pull_request:
     branches: [main]
-    paths:
-      - "**.go"
-      - "go.mod"
-      - "go.sum"
 
 concurrency:
   group: go-ci-${{ github.ref }}
@@ -30,6 +22,15 @@ jobs:
         options: --name jetstream
     steps:
       - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: changes
+        with:
+          filters: |
+            src:
+              - '!**.go'
+      - name: Check for Go changes
+        if: steps.changes.outputs.src == 'true'
+        run: echo "No Go changes detected, skipping build and tests." && exit 0
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
