@@ -32,23 +32,30 @@ jobs:
         if: steps.changes.outputs.src == 'true'
         run: echo "No Go changes detected, skipping build and tests." && exit 0
       - name: Set up Go
+        if: steps.changes.outputs.src == 'true'
         uses: actions/setup-go@v5
         with:
           go-version: "1.24"
           check-latest: true
           cache-dependency-path: internal/**/go.sum
       - name: Install Just
+        if: steps.changes.outputs.src == 'true'
         run: sudo apt-get update && sudo apt-get install -y just
       - name: Build
+        if: steps.changes.outputs.src == 'true'
         run: just go-build
       - name: Run unit tests
+        if: steps.changes.outputs.src == 'true'
         run: just go-tests
       - name: start_jetstream
+        if: steps.changes.outputs.src == 'true'
         run: |
           chmod a+x ${{ github.workspace }}/.github/workflows/jetstream-entrypoint.sh
           docker cp ${{ github.workspace }}/.github/workflows/jetstream-entrypoint.sh jetstream:/usr/local/bin/docker-entrypoint.sh
           docker restart jetstream
       - name: Sleep for JetStream to start
+        if: steps.changes.outputs.src == 'true'
         run: sleep 10
       - name: Run integration tests
+        if: steps.changes.outputs.src == 'true'
         run: just go-integration-tests
