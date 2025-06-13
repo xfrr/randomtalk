@@ -1,5 +1,8 @@
 name: randomtalk
 
+include:
+  - "web.docker-compose.yml"
+
 networks:
   randomtalk-network:
     driver: bridge

@@ -1,0 +1,41 @@
+{
+  "common": {
+    "ok": "OK",
+    "cancel": "Cancel",
+    "close": "Close",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "add": "Add",
+    "next": "Next",
+    "previous": "Previous",
+    "submit": "Submit",
+  },
+  "error": {
+    "generic": "An error occurred. Please try again.",
+    "network": "Network error. Please check your connection.",
+    "notFound": "The requested resource was not found.",
+    "unauthorized": "Unauthorized. Please log in."
+  },
+  "landing": {
+    "title": "Welcome to RandomTalk",
+    "subtitle": "Connect with random people around the world!",
+  },
+  "birthdate": {
+    "placeholder": "Select your birthdate",
+    "accessibilityLabel": "Select your birthdate",
+    "locale": "en",
+    "label": "Your birthdate",
+    "error": {
+      "required": "Birthdate is required.",
+      "tooYoung": "You must be at least {{minAge}} years old.",
+      "tooOld": "Please enter a valid age below {{maxAge}} years."
+    },
+    "ageDisplay": "You are {{count}} years old 🎉"
+  },
+  "validation": {
+    "required": "This field is required",
+    "minLength": "Minimum {{count}} characters required",
+    "invalidFormat": "Invalid format"
+  }
+}

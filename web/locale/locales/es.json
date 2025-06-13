@@ -1,0 +1,41 @@
+{
+  "common": {
+    "ok": "Aceptar",
+    "cancel": "Cancelar",
+    "close": "Cerrar",
+    "save": "Guardar",
+    "delete": "Eliminar",
+    "edit": "Editar",
+    "add": "Agregar",
+    "next": "Siguiente",
+    "previous": "Anterior",
+    "submit": "Enviar"
+  },
+  "error": {
+    "generic": "Ocurrió un error. Por favor, inténtalo de nuevo.",
+    "network": "Error de red. Por favor, verifica tu conexión a Internet.",
+    "notFound": "No se encontró el recurso solicitado.",
+    "unauthorized": "No autorizado. Por favor, inicia sesión."
+  },
+  "landing": {
+    "title": "Bienvenido a RandomTalk",
+    "subtitle": "¡Chatea con personas al azar de todo el mundo!",
+  },
+  "birthdate": {
+    "placeholder": "Seleccione su fecha de nacimiento",
+    "accessibilityLabel": "Seleccione su fecha de nacimiento",
+    "locale": "es",
+    "label": "Tu fecha de nacimiento",
+    "error": {
+      "required": "La fecha de nacimiento es obligatoria.",
+      "tooYoung": "Debes tener al menos {{minAge}} años.",
+      "tooOld": "Por favor, ingrese una edad válida por debajo de {{maxAge}} años."
+    },
+    "ageDisplay": "Tienes {{count}} años 🎉"
+  },
+  "validation": {
+    "required": "Este campo es obligatorio",
+    "minLength": "Se requieren un mínimo de {{count}} caracteres",
+    "invalidFormat": "Formato inválido"
+  }
+}
