@@ -61,7 +61,7 @@ The following streaming systems are supported:
 
 Once the application is started, you can access the application at the following URLs:
 
-- **Web Chat Application**: [http://localhost:8080](http://localhost:8080)
+- **Web Chat Application**: [http://localhost:8081](http://localhost:8081)
 - **Grafana**: [http://localhost:3000](http://localhost:3000)
 - **Prometheus**: [http://localhost:9090](http://localhost:9090)
 - **NATS UI**: [http://localhost:8222](http://localhost:31311)
