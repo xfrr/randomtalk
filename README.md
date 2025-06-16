@@ -16,7 +16,7 @@
 - In-house **Gale-Shapley algorithm** for matching users based on their preferences.
 - Real-time chat using **WebSockets**.
 - Monitoring and observability using **Grafana** and **Prometheus**.
-- High-concurrency management using Optimistic Locking and NATS Jetsream capabilities.
+- High-concurrency management using Optimistic Locking and NATS JetStream capabilities.
 - Scalability using **Kubernetes** and **Helm**.
 
 ## 🏁 Getting Started <a name = "getting_started"></a>
