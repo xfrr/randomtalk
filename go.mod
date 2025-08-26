@@ -5,11 +5,12 @@ go 1.24.0
 replace google.golang.org/genproto => google.golang.org/genproto v0.0.0-20250212204824-5a70512c5d8b
 
 require (
+	github.com/cloudevents/sdk-go v1.2.0
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.26.3
 	github.com/nats-io/nats.go v1.43.0
 	github.com/rs/zerolog v1.34.0
 	github.com/spf13/cobra v1.9.1
-	github.com/stretchr/testify v1.10.0
+	github.com/stretchr/testify v1.11.0
 	github.com/xfrr/randomtalk/internal/chat v0.0.0-20250608223647-dd78d5a23061
 	github.com/xfrr/randomtalk/internal/matchmaking v0.0.0-20250608223647-dd78d5a23061
 	github.com/xfrr/randomtalk/internal/shared v0.0.0-20250608223647-dd78d5a23061
@@ -37,9 +38,11 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/nats-io/nkeys v0.4.11 // indirect
 	github.com/nats-io/nuid v1.0.1 // indirect
+	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/spf13/pflag v1.0.6 // indirect
 	github.com/xfrr/go-cqrsify v0.4.4 // indirect
+	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.59.0 // indirect
 	go.opentelemetry.io/otel v1.35.0 // indirect
