@@ -9,24 +9,24 @@ import (
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 	"github.com/rs/zerolog"
-	"github.com/xfrr/go-cqrsify/cqrs"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/structpb"
 
+	"github.com/xfrr/go-cqrsify/messaging"
 	"github.com/xfrr/randomtalk/internal/chat/infrastructure/auth"
-	"github.com/xfrr/randomtalk/internal/shared/messaging"
 	"github.com/xfrr/randomtalk/internal/shared/semantic"
 
 	chatcommands "github.com/xfrr/randomtalk/internal/chat/application/commands"
 	chatqueries "github.com/xfrr/randomtalk/internal/chat/application/queries"
 	chatconfig "github.com/xfrr/randomtalk/internal/chat/config"
 	httpencoding "github.com/xfrr/randomtalk/internal/chat/infrastructure/http/encoding"
+	imsg "github.com/xfrr/randomtalk/internal/shared/messaging"
 	chatpbv1 "github.com/xfrr/randomtalk/proto/gen/go/randomtalk/chat/v1"
 )
 
 // NotificationConsumer is a component that consumes notifications.
 type NotificationConsumer interface {
-	Consume(ctx context.Context, notificationHandler func(ctx context.Context, notification *messaging.Event)) error
+	Consume(ctx context.Context, notificationHandler func(ctx context.Context, notification *imsg.Event)) error
 }
 
 // WebSocket Upgrader with proper settings
@@ -195,7 +195,7 @@ func (h *Hub) broadcastMessage(msg []byte) {
 }
 
 func (h *Hub) startNotificationsConsumer(ctx context.Context) {
-	err := h.notificationsConsumer.Consume(ctx, func(ctx context.Context, notification *messaging.Event) {
+	err := h.notificationsConsumer.Consume(ctx, func(ctx context.Context, notification *imsg.Event) {
 		h.logger.Debug().Msg("received notification, sending to clients")
 
 		var dataMap map[string]any
@@ -366,14 +366,10 @@ func (c *Client) readPump(contentType string) {
 		}
 
 		ctx = auth.ContextWithUserID(ctx, c.id)
-		res, err := cqrs.Dispatch[any](ctx, c.hub.cmdBus, cmd)
-		if err != nil {
-			logger.Error().Err(err).Msg("failed to dispatch command")
-			respondError(c, "system", err)
-			continue
-		}
-
-		if res == nil {
+		dispatchErr := messaging.DispatchCommand(ctx, c.hub.cmdBus, cmd)
+		if dispatchErr != nil {
+			logger.Error().Err(dispatchErr).Msg("failed to dispatch command")
+			respondError(c, "system", dispatchErr)
 			continue
 		}
 	}

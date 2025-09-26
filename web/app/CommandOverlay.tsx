@@ -10,7 +10,7 @@ export default function CommandOverlay({
 
   const commandHandlers = [
     {
-      CommandName: "create_chat_session",
+      CommandName: "randomtalk.chat.create_chat_session",
       Do: async (cmd: Command) => {
         sendCommand(cmd);
       },

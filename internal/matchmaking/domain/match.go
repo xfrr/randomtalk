@@ -4,14 +4,14 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/xfrr/go-cqrsify/aggregate"
+	"github.com/xfrr/go-cqrsify/domain"
 	"github.com/xfrr/randomtalk/internal/shared/gender"
 	"github.com/xfrr/randomtalk/internal/shared/matchmaking"
 )
 
 // Match is a domain entity representing a successful pairing of two users.
 type Match struct {
-	*aggregate.Base[string]
+	*domain.BaseAggregate[string]
 
 	requester *User
 	match     *User
@@ -51,10 +51,10 @@ func (m *Match) registerEventHandlers() {
 	m.HandleEvent(matchCreatedEvent.EventName(), m.handleMatchCreatedEvent)
 }
 
-func (m *Match) handleMatchCreatedEvent(evt aggregate.Event) {
-	payload, ok := evt.Payload().(*MatchCreatedEvent)
+func (m *Match) handleMatchCreatedEvent(evt domain.Event) error {
+	payload, ok := evt.(*MatchCreatedEvent)
 	if !ok {
-		panic(fmt.Sprintf("unexpected event payload type: %T", evt.Payload()))
+		return fmt.Errorf("unexpected event payload type: %T", evt)
 	}
 
 	m.requester = &User{
@@ -72,6 +72,7 @@ func (m *Match) handleMatchCreatedEvent(evt aggregate.Event) {
 	}
 
 	m.createdAt = time.Now()
+	return nil
 }
 
 func (m *Match) validate() error {

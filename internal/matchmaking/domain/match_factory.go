@@ -1,8 +1,7 @@
 package matchdomain
 
 import (
-	"github.com/google/uuid"
-	"github.com/xfrr/go-cqrsify/aggregate"
+	"github.com/xfrr/go-cqrsify/domain"
 
 	domainerror "github.com/xfrr/randomtalk/internal/shared/domain"
 )
@@ -38,17 +37,12 @@ func NewMatch(
 	match := newMatch(msid)
 
 	event := NewMatchCreatedEvent(
-		msid.String(),
+		match,
 		requesterUser,
 		matchedUser,
 	)
 
-	err := aggregate.RaiseEvent(
-		match,
-		uuid.New().String(),
-		event.EventName(),
-		event,
-	)
+	err := domain.NextEvent(match, event)
 	if err != nil {
 		return nil, err
 	}
@@ -60,10 +54,10 @@ func NewMatch(
 	return match, nil
 }
 
-func NewMatchFromEvents(id MatchID, events ...aggregate.Event) (*Match, error) {
+func NewMatchFromEvents(id MatchID, events ...domain.Event) (*Match, error) {
 	match := newMatch(id)
 
-	err := aggregate.RestoreStateFromHistory(match, events)
+	err := domain.RestoreAggregateFromHistory(match, events)
 	if err != nil {
 		return nil, err
 	}
@@ -77,7 +71,7 @@ func NewMatchFromEvents(id MatchID, events ...aggregate.Event) (*Match, error) {
 
 func newMatch(id MatchID) *Match {
 	match := &Match{
-		Base: aggregate.New(string(id), MatchAggregateName),
+		BaseAggregate: domain.NewAggregate(string(id), MatchAggregateName),
 	}
 
 	match.registerEventHandlers()

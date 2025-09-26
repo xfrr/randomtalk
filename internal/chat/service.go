@@ -38,14 +38,10 @@ type Service struct {
 	querybus                   chatqueries.QueryBus
 	matchNotificationsConsumer *xnats.MessagingEventConsumer
 	httpWebsocketHub           *chathttp.Hub
+	closers                    []func()
 }
 
 func (s *Service) Start(ctx context.Context) {
-	go func() {
-		<-ctx.Done()
-		s.shutdown()
-	}()
-
 	go s.httpWebsocketHub.Run(ctx)
 
 	// serve http and websocket
@@ -60,11 +56,15 @@ func (s *Service) Start(ctx context.Context) {
 			s.logger.Error().Err(err).Msg("failed to start http server")
 		}
 	}()
+
+	<-ctx.Done()
+	s.shutdown()
 }
 
 func (s *Service) shutdown() {
-	if s.natsConnection != nil {
-		s.natsConnection.Close()
+	s.logger.Info().Msg("shutting down chat service...")
+	for _, closer := range s.closers {
+		closer()
 	}
 }
 
@@ -158,7 +158,17 @@ func NewService(opts ...InitOption) (*Service, error) {
 
 	matchRequester := chatnats.NewMatchRequester(svc.config.NotificationStreamConfig.Name, js)
 
-	svc.cmdbus, svc.querybus = chatcommands.InitCommandBus(ctx, chatSessionRepo, matchRequester, *svc.logger), chatqueries.InitQueryBus(ctx)
+	var cmdCloser func()
+	svc.cmdbus, cmdCloser, err = chatcommands.InitCommandBus(ctx, chatSessionRepo, matchRequester, *svc.logger)
+	if err != nil {
+		return nil, fmt.Errorf("failed to initialize command bus: %w", err)
+	}
+	svc.registerCloser(cmdCloser)
+
+	svc.querybus, _, err = chatqueries.InitQueryBus(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to initialize query bus: %w", err)
+	}
 
 	matchNotificationsConsumer, err := svc.initMatchNotificationsConsumer(ctx)
 	if err != nil {
@@ -209,6 +219,20 @@ func (s *Service) setupNatsConnection(config chatconfig.Config) error {
 		return err
 	}
 
+	if !s.natsConnection.IsConnected() {
+		return fmt.Errorf("failed to connect to NATS server at %s", config.NatsConfig.URI)
+	}
+
+	s.logger.Info().
+		Str("uri", config.NatsConfig.URI).
+		Msg("connected to NATS server")
+
+	s.registerCloser(func() {
+		if s.natsConnection != nil && !s.natsConnection.IsClosed() {
+			s.natsConnection.Close()
+			s.logger.Info().Msg("NATS connection closed")
+		}
+	})
 	return nil
 }
 
@@ -238,6 +262,14 @@ func (s *Service) initMatchNotificationsConsumer(ctx context.Context) (*xnats.Me
 	}
 
 	return chatNotificationConsumer, nil
+}
+
+func (s *Service) registerCloser(closer func()) {
+	if s.closers == nil {
+		s.closers = make([]func(), 0)
+	}
+
+	s.closers = append(s.closers, closer)
 }
 
 // func (s *Service) startMatchNotificationsConsumer(

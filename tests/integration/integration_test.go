@@ -27,8 +27,11 @@ const (
 	chatSubjectBase  = "randomtalk.chat.notifications.sessions"
 	matchmakingTopic = "randomtalk.matchmaking.matches.>"
 	numberOfUsers    = 10
-	expectedMatches  = 5
 	testTimeout      = 5 * time.Minute // Timeout for the entire test
+)
+
+var (
+	expectedMatches = numberOfUsers / 2 // With 1000 users, we expect 500 matches
 )
 
 type NATSClient struct {
@@ -147,9 +150,11 @@ func createChatEvent(userID int) cloudevents.Event {
 	event.SetDataContentType(cloudevents.ApplicationJSON)
 
 	data := map[string]interface{}{
-		"user_id":     strconv.Itoa(userID), // or userID int if your system expects that
-		"user_age":    20,
-		"user_gender": "GENDER_MALE",
+		"user_attributes": map[string]interface{}{
+			"id":     strconv.Itoa(userID),
+			"age":    20,
+			"gender": "GENDER_MALE",
+		},
 		"user_preferences": map[string]interface{}{
 			"min_age":   20,
 			"max_age":   30,

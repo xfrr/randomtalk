@@ -3,8 +3,6 @@ package matchmaking
 import (
 	"context"
 	"errors"
-	"fmt"
-	"net"
 	"time"
 
 	"github.com/nats-io/nats.go"
@@ -18,10 +16,8 @@ import (
 	xnats "github.com/xfrr/randomtalk/internal/shared/nats"
 
 	commands "github.com/xfrr/randomtalk/internal/matchmaking/application/commands"
-	queries "github.com/xfrr/randomtalk/internal/matchmaking/application/queries"
 	config "github.com/xfrr/randomtalk/internal/matchmaking/config"
 	domain "github.com/xfrr/randomtalk/internal/matchmaking/domain"
-	grpc "github.com/xfrr/randomtalk/internal/matchmaking/infrastructure/grpc"
 	handlers "github.com/xfrr/randomtalk/internal/matchmaking/infrastructure/handlers"
 	inMemoryAdapter "github.com/xfrr/randomtalk/internal/matchmaking/infrastructure/memory"
 	natsAdapter "github.com/xfrr/randomtalk/internal/matchmaking/infrastructure/nats"
@@ -41,26 +37,22 @@ type Service struct {
 	version            string
 	logger             *zerolog.Logger
 	natsConnection     *nats.Conn
-	grpcServer         *grpc.Server
-	grpcServerCloser   func()
 	matchmakingService domain.MatchmakingProcessor
+	cmdbus             commands.CommandBus
+	closers            []func()
 }
 
 // MustInitService initializes a new matchmaking service with the provided options.
 // If an error occurs during initialization, the service will log the error and exit.
-func MustInitService(ctx context.Context, opts ...InitOption) Service {
+func MustInitService(ctx context.Context, opts ...InitOption) *Service {
 	service, err := NewService(opts...)
 	if err != nil {
 		service.logger.Fatal().Err(err).Msg("failed to initialize matchmaking service")
 	}
 
 	service.logger.Info().Str("version", service.version).Msg("starting matchmaking service")
-
-	if startErr := service.start(ctx); startErr != nil {
-		service.logger.Fatal().Err(startErr).Msg("failed to start matchmaking service")
-	}
-
-	return *service
+	service.start(ctx)
+	return service
 }
 
 // NewService creates a new matchmaking service with the provided options.
@@ -86,7 +78,7 @@ func NewService(opts ...InitOption) (*Service, error) {
 		logger := logging.NewLogger(
 			svc.config.ServiceName,
 			env.Environment(svc.config.ServiceEnvironment),
-			svc.config.LoggingConfig.Level,
+			svc.config.LogLevel,
 		)
 
 		svc.logger = &logger
@@ -128,41 +120,25 @@ func NewService(opts ...InitOption) (*Service, error) {
 		return svc, err
 	}
 
-	cmdbus := commands.InitCommandBus(ctx, svc.matchmakingService)
-	querybus := queries.InitQueryBus(ctx)
-
-	if svc.config.GrpcServerEnabled {
-		svc.grpcServer, svc.grpcServerCloser, err = grpc.NewServer(cmdbus, querybus)
-		if err != nil {
-			return svc, fmt.Errorf("failed to create gRPC server: %w", err)
-		}
-	}
+	var cmdbusCloser func()
+	svc.cmdbus, cmdbusCloser = commands.InitCommandBus(ctx, svc.matchmakingService)
+	svc.closers = append(svc.closers, cmdbusCloser)
 
 	return svc, nil
 }
 
 // shutdown closes all the resources used by the matchmaking service.
 func (s *Service) Shutdown() {
-	if s.natsConnection != nil {
-		s.natsConnection.Close()
-	}
-	if s.grpcServerCloser != nil {
-		s.grpcServerCloser()
+	for _, closer := range s.closers {
+		closer()
 	}
 }
 
-func (s *Service) start(ctx context.Context) error {
+func (s *Service) start(ctx context.Context) {
 	go s.startChatNotificationConsumer(ctx, s.matchmakingService)
-
-	go s.startGrpcServer()
-
-	return nil
 }
 
-func (s *Service) startChatNotificationConsumer(
-	ctx context.Context,
-	matchmakerService domain.MatchmakingProcessor,
-) {
+func (s *Service) startChatNotificationConsumer(ctx context.Context, mp domain.MatchmakingProcessor) {
 	consumer, err := s.initChatNotificationConsumer(ctx)
 	if err != nil {
 		s.logger.Fatal().Err(err).Msg("failed to initialize chat notification consumer")
@@ -170,7 +146,7 @@ func (s *Service) startChatNotificationConsumer(
 	}
 
 	// create user match request event handler
-	userMatchRequestHandler := handlers.NewUserMatchRequestedEventHandler(matchmakerService, s.logger)
+	userMatchRequestHandler := handlers.NewUserMatchRequestedEventHandler(mp, s.logger)
 
 	s.logger.Debug().
 		Str("consumer_name", s.config.ChatNotificationsConsumerConfig.Name).
@@ -184,24 +160,6 @@ func (s *Service) startChatNotificationConsumer(
 	); err != nil {
 		s.logger.Error().Err(err).Msg("failed to start chat notification event handler")
 	}
-}
-
-func (s *Service) startGrpcServer() {
-	if s.grpcServer == nil {
-		return
-	}
-
-	s.logger.Info().Int("port", s.config.GrpcServerPort).Msg("starting gRPC server")
-	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", s.config.GrpcServerPort))
-	if err != nil {
-		s.logger.Fatal().Err(err).Msg("failed to listen")
-	}
-
-	if err = s.grpcServer.Serve(lis); err != nil {
-		s.logger.Fatal().Err(err).Msg("failed to serve")
-	}
-
-	s.logger.Info().Msg("gRPC server stopped")
 }
 
 func (s *Service) initChatNotificationConsumer(ctx context.Context) (*xnats.MessagingEventConsumer, error) {
@@ -272,7 +230,7 @@ func initOtelTraces(ctx context.Context, config config.Config, serviceVersion st
 		xotel.WithServiceName(config.ServiceName),
 		xotel.WithServiceVersion(serviceVersion),
 		xotel.WithServiceEnvironment(env.Environment(config.ServiceEnvironment)),
-		xotel.WithEndpointURL(config.Observability.OTELCollectorEndpoint),
+		xotel.WithEndpointURL(config.OTELCollectorEndpoint),
 	)
 	if err != nil {
 		return nil, err
@@ -282,7 +240,7 @@ func initOtelTraces(ctx context.Context, config config.Config, serviceVersion st
 
 func (s *Service) setupNatsConnection(config config.Config) error {
 	var err error
-	s.natsConnection, err = nats.Connect(config.NatsConfig.URI,
+	s.natsConnection, err = nats.Connect(config.NatsURI,
 		nats.ReconnectWait(5*time.Second),
 		nats.MaxReconnects(-1),
 		nats.PingInterval(10*time.Second),
@@ -300,6 +258,16 @@ func (s *Service) setupNatsConnection(config config.Config) error {
 	if err != nil {
 		return err
 	}
+
+	s.registerCloser(func() {
+		if s.natsConnection != nil && !s.natsConnection.IsClosed() {
+			s.natsConnection.Close()
+		}
+	})
+
+	s.logger.Info().
+		Str("nats_url", config.NatsConfig.NatsURI).
+		Msg("connected to NATS server")
 	return nil
 }
 
@@ -320,4 +288,12 @@ func (s *Service) initMatchRepository(ctx context.Context, js jetstream.JetStrea
 	}
 
 	return tracing.WrapMatchRepository(matchRepo, s.traceProvider), nil
+}
+
+func (s *Service) registerCloser(closer func()) {
+	if closer == nil {
+		s.closers = make([]func(), 0)
+	}
+
+	s.closers = append(s.closers, closer)
 }

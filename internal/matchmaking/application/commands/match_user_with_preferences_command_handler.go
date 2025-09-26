@@ -10,6 +10,10 @@ import (
 	matchdomain "github.com/xfrr/randomtalk/internal/matchmaking/domain"
 )
 
+const (
+	MatchUserWithPreferencesCommandType = "randomtalk.matchmaking.match_user_with_preferences"
+)
+
 var (
 	ErrUnableToMatch = errors.New("unable to match user with the given preferences")
 )
@@ -24,10 +28,7 @@ func NewMatchmakingCommandHandler(ms matchdomain.MatchmakingProcessor) *Matchmak
 	}
 }
 
-func (h *MatchmakingCommandHandler) ProcessMatchUserWithPreferencesCommand(
-	ctx context.Context,
-	cmd MatchUserWithPreferencesCommand,
-) (interface{}, error) {
+func (h *MatchmakingCommandHandler) Handle(ctx context.Context, cmd MatchUserWithPreferencesCommand) error {
 	log.Debug().
 		Str("user_id", cmd.UserID).
 		Int32("user_age", cmd.UserAge).
@@ -43,12 +44,9 @@ func (h *MatchmakingCommandHandler) ProcessMatchUserWithPreferencesCommand(
 
 	err := h.matchmakingService.ProcessMatchRequest(ctx, *requesterUser)
 	if err != nil {
-		return nil, fmt.Errorf("failed to find best match: %w", err)
+		return fmt.Errorf("failed to find best match: %w", err)
 	}
 
 	// TODO: subscribe to the match notifications channel to receive the match
-
-	return &MatchUserWithPreferencesResponse{
-		// MatchID: match.ID(),
-	}, nil
+	return nil
 }

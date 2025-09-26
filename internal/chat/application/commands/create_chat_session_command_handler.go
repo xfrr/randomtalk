@@ -10,6 +10,8 @@ import (
 	"github.com/xfrr/randomtalk/internal/shared/matchmaking"
 )
 
+const CreateChatSessionCommandType = "randomtalk.chat.create_chat_session"
+
 func NewCreateChatSessionCommandHandler(
 	chatsessionRepo chatdomain.ChatSessionRepository,
 	matchRequester chatdomain.MatchRequester,
@@ -28,13 +30,10 @@ type CreateChatSessionCommandHandler struct {
 	chatSessionRepo chatdomain.ChatSessionRepository
 }
 
-func (h CreateChatSessionCommandHandler) Handle(
-	ctx context.Context,
-	cmd CreateChatSessionCommand,
-) (CreateChatSessionResponse, error) {
+func (h CreateChatSessionCommandHandler) Handle(ctx context.Context, cmd CreateChatSessionCommand) error {
 	userID, ok := auth.UserIDFromContext(ctx)
 	if !ok {
-		return CreateChatSessionResponse{}, ErrMissingUserIDFromContext
+		return ErrMissingUserIDFromContext
 	}
 
 	h.logger.Debug().
@@ -44,9 +43,9 @@ func (h CreateChatSessionCommandHandler) Handle(
 		Msg("an user requested a new random chat session")
 
 	if exists, err := h.chatSessionRepo.Exists(ctx, userID); err != nil {
-		return CreateChatSessionResponse{}, err
+		return err
 	} else if exists {
-		return CreateChatSessionResponse{}, chatdomain.
+		return chatdomain.
 			ErrChatSessionAlreadyExists.
 			WithAggregateID(userID).
 			WithAggregateName(chatdomain.AggregateName)
@@ -64,23 +63,21 @@ func (h CreateChatSessionCommandHandler) Handle(
 			WithInterests(cmd.UserMatchPreferenceInterests),
 	)
 	if err != nil {
-		return CreateChatSessionResponse{}, err
+		return err
 	}
 
 	cs, err := chatdomain.NewChatSession(user.ID(), user)
 	if err != nil {
-		return CreateChatSessionResponse{}, err
+		return err
 	}
 
 	if err = h.chatSessionRepo.Save(ctx, cs); err != nil {
-		return CreateChatSessionResponse{}, err
+		return err
 	}
 
 	if err = h.matchRequester.RequestMatch(ctx, cs); err != nil {
-		return CreateChatSessionResponse{}, err
+		return err
 	}
 
-	return CreateChatSessionResponse{
-		ChatSessionID: cs.ID().String(),
-	}, nil
+	return nil
 }

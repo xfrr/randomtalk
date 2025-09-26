@@ -3,13 +3,13 @@ package chatqueries
 import (
 	"context"
 
-	"github.com/xfrr/go-cqrsify/cqrs"
+	"github.com/xfrr/go-cqrsify/messaging"
 )
 
-type QueryBus = cqrs.Bus
+type QueryBus = messaging.QueryBus
 
-func InitQueryBus(ctx context.Context) cqrs.Bus {
-	qrybus := cqrs.NewInMemoryBus()
+func InitQueryBus(_ context.Context) (QueryBus, func(), error) {
+	qrybus := messaging.NewInMemoryQueryBus()
 	// TODO: add query handlers
-	return qrybus
+	return qrybus, func() {}, nil
 }

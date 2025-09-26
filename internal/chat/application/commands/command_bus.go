@@ -4,11 +4,11 @@ import (
 	"context"
 
 	"github.com/rs/zerolog"
-	"github.com/xfrr/go-cqrsify/cqrs"
+	"github.com/xfrr/go-cqrsify/messaging"
 	chatdomain "github.com/xfrr/randomtalk/internal/chat/domain"
 )
 
-type CommandBus = cqrs.Bus
+type CommandBus = messaging.CommandBus
 
 // InitCommandBus initializes and configures a new command bus instance.
 //
@@ -19,22 +19,27 @@ func InitCommandBus(
 	csrepo chatdomain.ChatSessionRepository,
 	matchRequester chatdomain.MatchRequester,
 	logger zerolog.Logger,
-) CommandBus {
-	cmdbus := cqrs.NewInMemoryBus()
+) (CommandBus, func(), error) {
+	cmdbus := messaging.NewInMemoryCommandBus()
 
-	err := cqrs.Handle(
+	unsubCreateChatSessionCmd, err := messaging.SubscribeCommand(
 		ctx,
 		cmdbus,
-		NewCreateChatSessionCommandHandler(csrepo, matchRequester, logger).Handle,
+		CreateChatSessionCommandType,
+		NewCreateChatSessionCommandHandler(csrepo, matchRequester, logger),
 	)
 	if err != nil {
 		logger.Fatal().Err(err).Msg("failed to register command handler")
 	}
 
-	return cmdbus
+	closer := func() {
+		unsubCreateChatSessionCmd()
+	}
+
+	return cmdbus, closer, nil
 }
 
-type BaseCommand struct {
+type CommandInfo struct {
 	UserAgent      string `json:"-"`
 	UserIP         string `json:"-"`
 	UserDevice     string `json:"-"`
