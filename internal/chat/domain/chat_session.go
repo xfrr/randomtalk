@@ -3,7 +3,7 @@ package chatdomain
 import (
 	"fmt"
 
-	"github.com/xfrr/go-cqrsify/aggregate"
+	"github.com/xfrr/go-cqrsify/domain"
 	"github.com/xfrr/randomtalk/internal/shared/identity"
 	"github.com/xfrr/randomtalk/internal/shared/matchmaking"
 
@@ -24,7 +24,7 @@ type MatchPreferences = matchmaking.Preferences
 // ChatSession is the main Aggregate of the Chat bounded context.
 // It represents a chat session between two users.
 type ChatSession struct {
-	*aggregate.Base[string]
+	*domain.BaseAggregate[string]
 
 	state *chatSessionState
 }
@@ -50,10 +50,10 @@ func NewChatSession(id ID, user User) (*ChatSession, error) {
 }
 
 // NewChatSessionFromEvents creates a new ChatSession instance from a list of events.
-func NewChatSessionFromEvents(id ID, events []aggregate.Event) (*ChatSession, error) {
+func NewChatSessionFromEvents(id ID, events []domain.Event) (*ChatSession, error) {
 	cs := newChatSession(id)
 
-	err := aggregate.RestoreStateFromHistory(cs, events)
+	err := domain.RestoreAggregateFromHistory(cs, events)
 	if err != nil {
 		return cs, fmt.Errorf("failed to restore ChatSession state from history: %w", err)
 	}
@@ -67,7 +67,7 @@ func NewChatSessionFromEvents(id ID, events []aggregate.Event) (*ChatSession, er
 
 func newChatSession(id ID) *ChatSession {
 	cs := &ChatSession{
-		Base: aggregate.New(id.String(), AggregateName),
+		BaseAggregate: domain.NewAggregate(id.String(), AggregateName),
 	}
 
 	cs.registerEventHandlers()
@@ -89,6 +89,10 @@ func (cs ChatSession) User() *User {
 
 func (cs *ChatSession) raiseChatSessionCreatedEvent(user User) error {
 	chatSessionCreatedEvent := chatdomaineventsv1.ChatSessionCreated{
+		BaseEvent: domain.NewEvent(
+			EventSourceName,
+			domain.CreateEventAggregateRef(cs),
+		),
 		SessionID:    cs.ID().String(),
 		UserID:       user.ID().String(),
 		UserNickname: user.Nickname(),
@@ -102,12 +106,7 @@ func (cs *ChatSession) raiseChatSessionCreatedEvent(user User) error {
 		},
 	}
 
-	err := aggregate.RaiseEvent(
-		cs,
-		identity.NewUUID().String(),
-		chatSessionCreatedEvent.EventName(),
-		chatSessionCreatedEvent,
-	)
+	err := domain.NextEvent(cs, chatSessionCreatedEvent)
 	if err != nil {
 		return fmt.Errorf("failed to raise ChatSessionCreated event: %w", err)
 	}

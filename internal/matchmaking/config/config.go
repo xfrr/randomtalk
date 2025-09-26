@@ -13,9 +13,6 @@ type Config struct {
 	LoggingConfig                   `envPrefix:"LOGGING_"`
 	NatsConfig                      `envPrefix:"NATS_"`
 	ChatNotificationsConsumerConfig `envPrefix:"CHAT_NOTIFICATIONS_CONSUMER_"`
-
-	GrpcServerEnabled bool `env:"GRPC_SERVER_ENABLED" default:"true"`
-	GrpcServerPort    int  `env:"GRPC_SERVER_PORT" default:"50000"`
 }
 
 func MustLoadFromEnv() Config {

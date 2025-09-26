@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/xfrr/go-cqrsify/cqrs"
+	"github.com/xfrr/go-cqrsify/messaging"
 	chatconfig "github.com/xfrr/randomtalk/internal/chat/config"
 	chatpb "github.com/xfrr/randomtalk/proto/gen/go/randomtalk/chat/v1"
 	"google.golang.org/grpc/codes"
@@ -58,7 +58,7 @@ func formatErrorResponse(err error) (uint32, string) {
 	var message string
 
 	switch {
-	case errors.Is(err, cqrs.ErrHandlerNotFound):
+	case errors.Is(err, messaging.ErrHandlerNotFound):
 		code = http.StatusNotFound
 		message = "Command not found: " + err.Error()
 	default:

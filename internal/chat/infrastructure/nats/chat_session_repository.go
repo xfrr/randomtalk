@@ -9,13 +9,14 @@ import (
 	"strings"
 
 	"github.com/cloudevents/sdk-go/v2/types"
+	"github.com/google/uuid"
 	"github.com/nats-io/nats.go/jetstream"
-	"github.com/xfrr/go-cqrsify/aggregate"
-	"github.com/xfrr/go-cqrsify/aggregate/event"
-	chatdom "github.com/xfrr/randomtalk/internal/chat/domain"
-	chatdomaineventsv1 "github.com/xfrr/randomtalk/internal/chat/domain/events/v1"
+	"github.com/xfrr/go-cqrsify/domain"
 	"github.com/xfrr/randomtalk/internal/shared/eventstore"
 	xnats "github.com/xfrr/randomtalk/internal/shared/nats"
+
+	chatdom "github.com/xfrr/randomtalk/internal/chat/domain"
+	chatdomaineventsv1 "github.com/xfrr/randomtalk/internal/chat/domain/events/v1"
 )
 
 const (
@@ -98,30 +99,27 @@ func (r ChatSessionRepository) Exists(ctx context.Context, id string) (bool, err
 	return len(cloudEvents) > 0, nil
 }
 
-func (r ChatSessionRepository) toStoreEvents(events []aggregate.Event) ([]eventstore.Event, error) {
+func (r ChatSessionRepository) toStoreEvents(events []domain.Event) ([]eventstore.Event, error) {
 	cloudEvents := make([]eventstore.Event, 0, len(events))
 	for _, evt := range events {
-		aggregateID, ok := evt.Aggregate().ID.(string)
+		aggregateID, ok := evt.AggregateRef().ID().(string)
 		if !ok {
 			return nil, errors.New("aggregate ID must be a string")
 		}
-		eventID, ok := evt.ID().(string)
-		if !ok {
-			return nil, errors.New("event ID must be a string")
-		}
 
+		eventID := uuid.New().String()
 		ce := eventstore.NewEvent()
 		ce.SetID(eventID)
 		ce.SetType(evt.Name())
 		ce.SetSource(chatdom.EventSourceName)
 		ce.SetSubject(strings.Join([]string{chatSessionsStreamSuffix, aggregateID}, "."))
-		ce.SetTime(evt.OccurredAt())
+		ce.SetTime(evt.Timestamp())
 		ce.SetDataSchema("schemas.randomtalk.com/chat/events/" + evt.Name() + "/1.0")
 
-		if err := ce.Context.SetExtension(xnats.SubjectVersionHeaderKey, strconv.Itoa(evt.Aggregate().Version)); err != nil {
+		if err := ce.Context.SetExtension(xnats.SubjectVersionHeaderKey, strconv.Itoa(int(evt.AggregateRef().Version()))); err != nil {
 			return nil, fmt.Errorf("set extension: %w", err)
 		}
-		if dataErr := ce.SetData(string(eventstore.ContentTypeApplicationJSON), evt.Payload()); dataErr != nil {
+		if dataErr := ce.SetData(string(eventstore.ContentTypeApplicationJSON), evt); dataErr != nil {
 			return nil, fmt.Errorf("set event data: %w", dataErr)
 		}
 		cloudEvents = append(cloudEvents, ce)
@@ -133,8 +131,8 @@ func buildStreamSourceName(sourceName, streamSuffix string) string {
 	return sourceName + "." + streamSuffix
 }
 
-func eventsFromCloudEvents(cloudEvents []eventstore.Event) ([]aggregate.Event, error) {
-	aggEvents := make([]aggregate.Event, len(cloudEvents))
+func eventsFromCloudEvents(cloudEvents []eventstore.Event) ([]domain.Event, error) {
+	aggEvents := make([]domain.Event, len(cloudEvents))
 	for i, ce := range cloudEvents {
 		evt, err := eventFromCloudEvent(ce)
 		if err != nil {
@@ -145,7 +143,7 @@ func eventsFromCloudEvents(cloudEvents []eventstore.Event) ([]aggregate.Event, e
 	return aggEvents, nil
 }
 
-func eventFromCloudEvent(ce eventstore.Event) (aggregate.Event, error) {
+func eventFromCloudEvent(ce eventstore.Event) (domain.Event, error) {
 	aggVersion, err := types.ToInteger(xnats.SubjectVersionFromMap(ce.Extensions()))
 	if err != nil {
 		return nil, fmt.Errorf("invalid event aggregate version: %w", err)
@@ -168,21 +166,14 @@ func eventFromCloudEvent(ce eventstore.Event) (aggregate.Event, error) {
 			return nil, errors.New("subject ID and event payload ID mismatch")
 		}
 
-		ev, evErr := event.New(
-			ce.ID(),
+		baseEvent := domain.NewEvent(
 			ce.Type(),
-			payload,
-			event.WithOccurredAt(ce.Time()),
-			event.WithAggregate(
-				subjectID,
-				chatdom.AggregateName,
-				int(aggVersion),
-			),
+			domain.NewEventAggregateReference(subjectID, chatdom.AggregateName, domain.AggregateVersion(aggVersion)),
+			domain.WithEventTimestamp(ce.Time()),
 		)
-		if evErr != nil {
-			return nil, fmt.Errorf("create domain event: %w", evErr)
-		}
-		return ev.Any(), nil
+
+		payload.BaseEvent = baseEvent
+		return *payload, nil
 	default:
 		return nil, fmt.Errorf("unexpected event type: %s", ce.Type())
 	}

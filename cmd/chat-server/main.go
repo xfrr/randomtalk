@@ -22,6 +22,4 @@ func main() {
 	// initialize chat service
 	svc := chatcontext.MustInitService(chatcontext.ServiceVersion(ServiceVersion))
 	svc.Start(ctx)
-
-	<-ctx.Done()
 }

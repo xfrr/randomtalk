@@ -1,5 +1,5 @@
 # Development Stage
-FROM golang:1.24-alpine AS dev
+FROM golang:1.25-alpine AS dev
 
 # Install required packages
 RUN apk upgrade --no-cache & apk add --no-cache \

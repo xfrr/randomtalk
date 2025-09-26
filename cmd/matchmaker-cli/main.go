@@ -6,7 +6,6 @@ import (
 	"github.com/spf13/cobra"
 
 	matchsessioncli "github.com/xfrr/randomtalk/internal/matchmaking/infrastructure/cli"
-	matchsessiongrpc "github.com/xfrr/randomtalk/internal/matchmaking/infrastructure/grpc"
 )
 
 var RootCmd = &cobra.Command{
@@ -21,16 +20,10 @@ var (
 func main() {
 	ctx := context.Background()
 
-	grpcClient, grpcClose, err := matchsessiongrpc.NewClient(*grpcAddr)
-	if err != nil {
-		panic(err)
-	}
-	defer grpcClose()
-
 	// add cobra commands
-	RootCmd.AddCommand(matchsessioncli.NewMatchSessionCobraCommand(grpcClient))
+	RootCmd.AddCommand(matchsessioncli.NewMatchSessionCobraCommand())
 
-	err = RootCmd.ExecuteContext(ctx)
+	err := RootCmd.ExecuteContext(ctx)
 	if err != nil {
 		panic(err)
 	}

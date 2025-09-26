@@ -1,12 +1,15 @@
 package matchdomain
 
 import (
+	"github.com/xfrr/go-cqrsify/domain"
 	"github.com/xfrr/randomtalk/internal/shared/gender"
 	"github.com/xfrr/randomtalk/internal/shared/matchmaking"
 )
 
 // MatchCreatedEvent is an event that is published when a match  is created.
 type MatchCreatedEvent struct {
+	domain.BaseEvent
+
 	MatchID                       string                  `json:"match_id"`
 	MatchUserRequesterID          string                  `json:"match_user_requester_id"`
 	MatchUserRequesterAge         int32                   `json:"match_user_requester_age"`
@@ -24,12 +27,13 @@ func (e MatchCreatedEvent) EventName() string {
 }
 
 func NewMatchCreatedEvent(
-	matchID string,
+	match *Match,
 	requesterUser User,
 	matchedUser User,
 ) *MatchCreatedEvent {
 	return &MatchCreatedEvent{
-		MatchID:                       matchID,
+		BaseEvent:                     domain.NewEvent("match_created", domain.CreateEventAggregateRef(match)),
+		MatchID:                       match.ID(),
 		MatchUserRequesterID:          requesterUser.ID(),
 		MatchUserRequesterAge:         requesterUser.Age(),
 		MatchUserRequesterGender:      requesterUser.Gender(),

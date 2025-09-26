@@ -152,7 +152,7 @@ export default function LandingView() {
     };
 
     dispatchCommand({
-      type: "create_chat_session",
+      type: "randomtalk.chat.create_chat_session",
       payload: {
         user_id: uuidv4(),
         user_nickname: username,

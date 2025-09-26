@@ -1,7 +1,11 @@
 package chatdomaineventsv1
 
+import "github.com/xfrr/go-cqrsify/domain"
+
 // ChatSessionCreated is an event that is published when a match  is created.
 type ChatSessionCreated struct {
+	domain.BaseEvent
+
 	SessionID      string   `json:"session_id"`
 	UserID         string   `json:"user_id"`
 	UserNickname   string   `json:"user_nickname"`

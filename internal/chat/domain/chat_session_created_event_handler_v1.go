@@ -1,15 +1,20 @@
 package chatdomain
 
 import (
-	"github.com/xfrr/go-cqrsify/aggregate"
+	"fmt"
+
+	"github.com/xfrr/go-cqrsify/domain"
 	chatdomaineventsv1 "github.com/xfrr/randomtalk/internal/chat/domain/events/v1"
 	"github.com/xfrr/randomtalk/internal/shared/gender"
 	"github.com/xfrr/randomtalk/internal/shared/matchmaking"
 )
 
 // chatSessionCreatedDomainEventHandler is a domain event handler for ChatSessionCreated events.
-func (cs *ChatSession) chatSessionCreatedDomainEventHandlerV1(evt aggregate.Event) {
-	payload, _ := evt.Payload().(chatdomaineventsv1.ChatSessionCreated)
+func (cs *ChatSession) chatSessionCreatedDomainEventHandlerV1(evt domain.Event) error {
+	payload, ok := evt.(chatdomaineventsv1.ChatSessionCreated)
+	if !ok {
+		return fmt.Errorf("unexpected event type: %T, expected: %T", evt, chatdomaineventsv1.ChatSessionCreated{})
+	}
 
 	if cs.state == nil {
 		cs.state = &chatSessionState{
@@ -29,4 +34,5 @@ func (cs *ChatSession) chatSessionCreatedDomainEventHandlerV1(evt aggregate.Even
 			WithMaxAge(payload.UserPreference.MaxAge).
 			WithInterests(payload.UserPreference.Interests),
 	}
+	return nil
 }

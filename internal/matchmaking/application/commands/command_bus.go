@@ -4,26 +4,32 @@ import (
 	"context"
 
 	"github.com/rs/zerolog/log"
-	"github.com/xfrr/go-cqrsify/cqrs"
+	"github.com/xfrr/go-cqrsify/messaging"
+
 	matchdomain "github.com/xfrr/randomtalk/internal/matchmaking/domain"
 )
 
-type CommandBus = cqrs.Bus
+type CommandBus = messaging.CommandBus
 
 func InitCommandBus(
 	ctx context.Context,
 	matchmakingService matchdomain.MatchmakingProcessor,
-) cqrs.Bus {
-	cmdbus := cqrs.NewInMemoryBus()
+) (CommandBus, func()) {
+	cmdbus := messaging.NewInMemoryCommandBus()
 
-	err := cqrs.Handle(
+	unsub, err := messaging.SubscribeCommand(
 		ctx,
 		cmdbus,
-		NewMatchmakingCommandHandler(matchmakingService).ProcessMatchUserWithPreferencesCommand,
+		MatchUserWithPreferencesCommandType,
+		NewMatchmakingCommandHandler(matchmakingService),
 	)
 	if err != nil {
 		log.Fatal().Err(err).Msg("failed to register match user with preferences command handler")
 	}
 
-	return cmdbus
+	closer := func() {
+		unsub()
+	}
+
+	return cmdbus, closer
 }

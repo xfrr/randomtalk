@@ -1,6 +1,6 @@
 module github.com/xfrr/randomtalk/internal/chat
 
-go 1.24.0
+go 1.25.0
 
 require (
 	github.com/caarlos0/env/v11 v11.3.1
@@ -9,7 +9,7 @@ require (
 	github.com/gorilla/websocket v1.5.3
 	github.com/nats-io/nats.go v1.43.0
 	github.com/rs/zerolog v1.34.0
-	github.com/xfrr/go-cqrsify v0.4.4
+	github.com/xfrr/go-cqrsify v0.8.2
 	go.opentelemetry.io/otel/trace v1.35.0
 	google.golang.org/grpc v1.73.0
 	google.golang.org/protobuf v1.36.6

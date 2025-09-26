@@ -7,13 +7,13 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/xfrr/go-cqrsify/cqrs"
+	"github.com/xfrr/go-cqrsify/messaging"
 	chatcommands "github.com/xfrr/randomtalk/internal/chat/application/commands"
 )
 
 var (
 	decoders = map[string]map[string]Decoder[any]{
-		chatcommands.CreateChatSessionCommand{}.CommandName(): {
+		chatcommands.CreateChatSessionCommandType: {
 			ApplicationJSON: AnyDecoder(NewJSONDecoder[chatcommands.CreateChatSessionCommand]()),
 		},
 	}
@@ -33,7 +33,7 @@ func (d anyDecoder[T]) Decode(r io.Reader) (any, error) {
 }
 
 // DecodeCommand decodes a command from a message using the given content type.
-func DecodeCommand(contentType string, msg []byte) (cqrs.Command, error) {
+func DecodeCommand(contentType string, msg []byte) (messaging.Command, error) {
 	var rawCommand struct {
 		Kind string `json:"kind"`
 		Data struct {
@@ -59,9 +59,9 @@ func DecodeCommand(contentType string, msg []byte) (cqrs.Command, error) {
 			return nil, err
 		}
 
-		castedCmd, ok := cmd.(cqrs.Command)
+		castedCmd, ok := cmd.(messaging.Command)
 		if !ok {
-			return nil, errors.New("decoded command is not a cqrs.Command")
+			return nil, errors.New("decoded command is not a messaging.Command")
 		}
 		return castedCmd, nil
 		// TODO: handle other message kinds
